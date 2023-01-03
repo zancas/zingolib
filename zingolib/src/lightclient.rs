@@ -97,17 +97,16 @@ fn repr_price_as_f64(from_gemini: &Value) -> f64 {
         .unwrap()
 }
 
-async fn get_recent_median_price_from_gemini() -> Result<f64, reqwest::Error> {
-    let mut trades: Vec<f64> =
-        reqwest::get("https://api.gemini.com/v1/trades/zecusd?limit_trades=11")
-            .await?
-            .json::<Value>()
-            .await?
-            .as_array()
-            .unwrap()
-            .into_iter()
-            .map(repr_price_as_f64)
-            .collect();
+async fn get_recent_median_price_from(uri: &str) -> Result<f64, reqwest::Error> {
+    let mut trades: Vec<f64> = reqwest::get(uri)
+        .await?
+        .json::<Value>()
+        .await?
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .map(repr_price_as_f64)
+        .collect();
     trades.sort_by(|a, b| a.partial_cmp(b).unwrap());
     Ok(trades[5])
 }
@@ -1061,7 +1060,11 @@ impl LightClient {
 
     pub(crate) async fn update_current_price(&self) -> String {
         // Get the zec price from the server
-        match get_recent_median_price_from_gemini().await {
+        match get_recent_median_price_from(
+            "https://api.gemini.com/v1/trades/zecusd?limit_trades=11",
+        )
+        .await
+        {
             Ok(price) => {
                 self.wallet.set_latest_zec_price(price).await;
                 return price.to_string();
