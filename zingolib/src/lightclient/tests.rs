@@ -13,13 +13,15 @@ use zcash_note_encryption::EphemeralKeyBytes;
 use zcash_primitives::consensus::{BlockHeight, BranchId, Parameters, TestNetwork};
 use zcash_primitives::memo::Memo;
 use zcash_primitives::merkle_tree::IncrementalWitness;
-use zcash_primitives::sapling::keys::DiversifiableFullViewingKey as SaplingFvk;
 use zcash_primitives::sapling::note_encryption::sapling_note_encryption;
 use zcash_primitives::sapling::{Note, Rseed, ValueCommitment};
 use zcash_primitives::transaction::components::amount::DEFAULT_FEE;
 use zcash_primitives::transaction::components::{OutputDescription, GROTH_PROOF_SIZE};
 use zcash_primitives::transaction::Transaction;
-use zcash_primitives::zip32::{ExtendedFullViewingKey, ExtendedSpendingKey as SaplingSpendingKey};
+use zcash_primitives::zip32::{
+    DiversifiableFullViewingKey as SaplingFvk, ExtendedFullViewingKey,
+    ExtendedSpendingKey as SaplingSpendingKey,
+};
 
 use crate::apply_scenario;
 use crate::blaze::block_witness_data::CommitmentTreesForBlock;
@@ -699,11 +701,8 @@ async fn sapling_to_sapling_scan_together() {
         (wc.try_into().unwrap(), wc.try_into().unwrap())
     };
     let value = 100_000;
-    let (transaction, _height, note) = fake_compactblock_list // NOTE: Extracting fvk this way for future proof.
-        .create_sapling_coinbase_transaction(
-            &SaplingFvk::from(ExtendedFullViewingKey::from(&mockuser_spendkey)),
-            value,
-        );
+    let (transaction, _height, note) =
+        fake_compactblock_list.create_sapling_coinbase_transaction(&mockuser_fvk, value);
     let txid = transaction.txid();
 
     // 3. Calculate witness so we can get the nullifier without it getting mined

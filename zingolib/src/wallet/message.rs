@@ -16,7 +16,9 @@ use zcash_primitives::{
     keys::OutgoingViewingKey,
     memo::Memo,
     sapling::{
-        note_encryption::{prf_ock, try_sapling_note_decryption, SaplingDomain},
+        note_encryption::{
+            prf_ock, try_sapling_note_decryption, PreparedIncomingViewingKey, SaplingDomain,
+        },
         PaymentAddress, Rseed, SaplingIvk, ValueCommitment,
     },
 };
@@ -202,7 +204,7 @@ impl Message {
         match try_sapling_note_decryption(
             &MAIN_NETWORK,
             BlockHeight::from_u32(1_100_000),
-            &ivk,
+            &PreparedIncomingViewingKey::new(ivk),
             &Unspendable {
                 cmu_bytes,
                 epk_bytes,
@@ -230,10 +232,10 @@ pub mod tests {
     use rand::{rngs::OsRng, Rng};
     use zcash_primitives::{
         memo::Memo,
-        sapling::{
-            keys::DiversifiableFullViewingKey as SaplingFvk, PaymentAddress, Rseed, SaplingIvk,
+        sapling::{PaymentAddress, Rseed, SaplingIvk},
+        zip32::{
+            DiversifiableFullViewingKey as SaplingFvk, ExtendedFullViewingKey, ExtendedSpendingKey,
         },
-        zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
     };
 
     use super::{Message, ENC_CIPHERTEXT_SIZE};
@@ -244,7 +246,7 @@ pub mod tests {
         rng.fill(&mut seed);
 
         let extsk = ExtendedSpendingKey::master(&seed);
-        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        let extfvk = extsk.to_extended_full_viewing_key();
         let fvk = SaplingFvk::from(extfvk);
         let (_, addr) = fvk.default_address();
 

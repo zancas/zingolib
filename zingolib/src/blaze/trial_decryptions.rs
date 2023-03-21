@@ -27,7 +27,10 @@ use tokio::{
 use zcash_note_encryption::Domain;
 use zcash_primitives::{
     consensus::{BlockHeight, Parameters},
-    sapling::{note_encryption::SaplingDomain, SaplingIvk},
+    sapling::{
+        note_encryption::{PreparedIncomingViewingKey, SaplingDomain},
+        SaplingIvk,
+    },
     transaction::{Transaction, TxId},
 };
 use zingoconfig::ZingoConfig;
@@ -186,7 +189,7 @@ impl TrialDecryptions {
                         &compact_transaction,
                         transaction_num,
                         &compact_block,
-                        sapling_ivk.clone().unwrap(),
+                        PreparedIncomingViewingKey::new(&sapling_ivk.clone().unwrap()),
                         height,
                         &config,
                         &wc,

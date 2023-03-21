@@ -38,9 +38,8 @@ use zcash_primitives::{
     memo::{Memo, MemoBytes},
     merkle_tree::{Hashable, IncrementalWitness},
     sapling::{
-        keys::DiversifiableFullViewingKey as SaplingFvk, note_encryption::SaplingDomain,
-        Diversifier as SaplingDiversifier, Node as SaplingNode, Note as SaplingNote,
-        Nullifier as SaplingNullifier, PaymentAddress as SaplingAddress,
+        note_encryption::SaplingDomain, Diversifier as SaplingDiversifier, Node as SaplingNode,
+        Note as SaplingNote, Nullifier as SaplingNullifier, PaymentAddress as SaplingAddress,
     },
     transaction::{
         components::{
@@ -52,7 +51,10 @@ use zcash_primitives::{
         },
         Transaction, TxId,
     },
-    zip32::ExtendedSpendingKey as SaplingExtendedSpendingKey,
+    zip32::{
+        DiversifiableFullViewingKey as SaplingFvk,
+        ExtendedSpendingKey as SaplingExtendedSpendingKey,
+    },
 };
 use zingoconfig::ChainType;
 
@@ -180,7 +182,11 @@ where
 
 impl FromCommitment for SaplingNode {
     fn from_commitment(from: &[u8; 32]) -> CtOption<Self> {
-        CtOption::new(Self::new(*from), subtle::Choice::from(1))
+        let maybe_node = Self::read(from.as_slice());
+        match maybe_node {
+            Ok(node) => CtOption::new(node, subtle::Choice::from(1)),
+            Err(_) => CtOption::new(Self::empty_root(0), subtle::Choice::from(0)),
+        }
     }
 }
 impl FromCommitment for MerkleHashOrchard {
@@ -1171,7 +1177,7 @@ impl ReadableWriteable<(OrchardFullViewingKey, OrchardDiversifier)> for OrchardN
         writer.write_u8(Self::VERSION)?;
         writer.write_u64::<LittleEndian>(self.value().inner())?;
         writer.write_all(&self.rho().to_bytes())?;
-        writer.write_all(self.random_seed().as_bytes())?;
+        writer.write_all(self.rseed().as_bytes())?;
         Ok(())
     }
 }

@@ -25,7 +25,6 @@ use zcash_primitives::{
     merkle_tree::{CommitmentTree, Hashable, IncrementalWitness, MerklePath},
     sapling::{
         self,
-        keys::DiversifiableFullViewingKey as SaplingFvk,
         note_encryption::{sapling_note_encryption, SaplingDomain},
         prover::TxProver,
         redjubjub::Signature,
@@ -37,7 +36,9 @@ use zcash_primitives::{
         },
         Transaction, TransactionData, TxId, TxVersion,
     },
-    zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
+    zip32::{
+        DiversifiableFullViewingKey as SaplingFvk, ExtendedFullViewingKey, ExtendedSpendingKey,
+    },
 };
 use zcash_proofs::sapling::SaplingProvingContext;
 
@@ -97,7 +98,7 @@ pub fn list_all_witness_nodes(cb: &CompactBlock) -> Vec<sapling::Node> {
     let mut nodes = vec![];
     for transaction in &cb.vtx {
         for co in &transaction.outputs {
-            nodes.push(sapling::Node::new(co.cmu().unwrap().into()))
+            nodes.push(sapling::Node::from_scalar(co.cmu().unwrap()))
         }
     }
 
@@ -384,7 +385,7 @@ impl FakeCompactBlock {
     // Returns the nullifier of the new note.
     pub fn add_random_sapling_transaction(&mut self, num_outputs: usize) {
         let xsk_m = ExtendedSpendingKey::master(&[1u8; 32]);
-        let extfvk = ExtendedFullViewingKey::from(&xsk_m);
+        let extfvk = ExtendedFullViewingKey::from(xsk_m.to_extended_full_viewing_key());
         let fvk = SaplingFvk::from(extfvk);
 
         let to = fvk.default_address().1;
@@ -491,7 +492,7 @@ impl FakeCompactBlockList {
                     .iter()
                     .filter_map(|vout| {
                         if let Some(TransparentAddress::PublicKey(taddr_hash)) =
-                            vout.script_pubkey.address()
+                            vout.recipient_address()
                         {
                             let taddr =
                                 taddr_hash.to_base58check(&config.base58_pubkey_address(), &[]);

@@ -18,10 +18,11 @@ use zcash_primitives::{
     memo::Memo,
     merkle_tree::IncrementalWitness,
     sapling::{
-        keys::DiversifiableFullViewingKey as SaplingFvk, note_encryption::SaplingDomain,
-        Node as SaplingNode, Note as SaplingNote, Nullifier as SaplingNullifier, PaymentAddress,
+        note_encryption::SaplingDomain, Node as SaplingNode, Note as SaplingNote,
+        Nullifier as SaplingNullifier, PaymentAddress,
     },
     transaction::{components::TxOut, TxId},
+    zip32::DiversifiableFullViewingKey as SaplingFvk,
 };
 
 use zingoconfig::{ChainType, MAX_REORG};
