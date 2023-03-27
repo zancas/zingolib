@@ -5,6 +5,7 @@ members = [
     "zingoconfig",
     "zingo-memo"
 ]
+exclude = [ "lsp_failer" ]
 
 [profile.release]
 debug = false
