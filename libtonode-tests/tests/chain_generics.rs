@@ -1,62 +1,7 @@
-use zcash_client_backend::PoolType::Shielded;
-use zcash_client_backend::PoolType::Transparent;
-use zcash_client_backend::ShieldedProtocol::Orchard;
-use zcash_client_backend::ShieldedProtocol::Sapling;
-
-use zingo_testutils::chain_generic_tests::fixtures::ignore_dust_inputs;
-use zingo_testutils::chain_generic_tests::fixtures::propose_and_broadcast_value_to_pool;
-use zingo_testutils::chain_generic_tests::fixtures::send_grace_dust;
-use zingo_testutils::chain_generic_tests::fixtures::send_required_dust;
-use zingo_testutils::chain_generic_tests::fixtures::send_shield_cycle;
-use zingo_testutils::chain_generic_tests::fixtures::send_value_to_pool;
-
-use libtonode_environment::LibtonodeEnvironment;
-
-#[tokio::test]
-async fn libtonode_send_40_000_to_transparent() {
-    send_value_to_pool::<LibtonodeEnvironment>(40_000, Transparent).await;
-}
-#[tokio::test]
-async fn libtonode_send_40_000_to_sapling() {
-    send_value_to_pool::<LibtonodeEnvironment>(40_000, Shielded(Sapling)).await;
-}
-#[tokio::test]
-async fn libtonode_send_40_000_to_orchard() {
-    send_value_to_pool::<LibtonodeEnvironment>(40_000, Shielded(Orchard)).await;
-}
-
-#[tokio::test]
-async fn libtonode_propose_and_broadcast_40_000_to_transparent() {
-    propose_and_broadcast_value_to_pool::<LibtonodeEnvironment>(40_000, Transparent).await;
-}
-#[tokio::test]
-async fn libtonode_propose_and_broadcast_40_000_to_sapling() {
-    propose_and_broadcast_value_to_pool::<LibtonodeEnvironment>(40_000, Shielded(Sapling)).await;
-}
-#[tokio::test]
-async fn libtonode_propose_and_broadcast_40_000_to_orchard() {
-    propose_and_broadcast_value_to_pool::<LibtonodeEnvironment>(40_000, Shielded(Orchard)).await;
-}
-#[tokio::test]
-async fn libtonode_send_shield_cycle() {
-    send_shield_cycle::<LibtonodeEnvironment>(4).await;
-}
-#[tokio::test]
-async fn libtonode_send_required_dust() {
-    send_required_dust::<LibtonodeEnvironment>().await;
-}
-#[tokio::test]
-async fn libtonode_send_grace_dust() {
-    send_grace_dust::<LibtonodeEnvironment>().await;
-}
-#[tokio::test]
-async fn libtonode_ignore_dust_inputs() {
-    ignore_dust_inputs::<LibtonodeEnvironment>().await;
-}
-
-pub(crate) mod libtonode_environment {
-    use zcash_client_backend::PoolType;
-
+mod chain_generics {
+    use zcash_client_backend::PoolType::Shielded;
+    use zcash_client_backend::PoolType::Transparent;
+    use zcash_client_backend::ShieldedProtocol::Orchard;
     use zcash_client_backend::ShieldedProtocol::Sapling;
 
     use zingo_testutils::chain_generic_tests::fixtures;
@@ -99,11 +44,6 @@ pub(crate) mod libtonode_environment {
     #[tokio::test]
     async fn send_shield_cycle() {
         fixtures::send_shield_cycle::<LibtonodeEnvironment>(1).await;
-    }
-    #[tokio::test]
-    #[ignore]
-    async fn send_grace_input() {
-        fixtures::send_grace_input::<LibtonodeEnvironment>().await;
     }
     #[tokio::test]
     async fn ignore_dust_inputs() {
