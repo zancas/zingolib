@@ -187,41 +187,6 @@ impl TransactionRecord {
     }
 
     /// TODO: Add Doc Comment Here!
-    // TODO: This is incorrect in the edge case where where we have a send-to-self with
-    // no text memo and 0-value fee
-    pub fn is_outgoing_transaction(&self) -> bool {
-        (!self.outgoing_tx_data.is_empty()) || self.total_value_spent() != 0
-    }
-
-    /// This means there's at least one note that adds funds
-    /// to this capabilities control
-    pub fn is_incoming_transaction(&self) -> bool {
-        self.sapling_notes
-            .iter()
-            .any(|note| !ShieldedNoteInterface::is_change(note))
-            || self
-                .orchard_notes
-                .iter()
-                .any(|note| !ShieldedNoteInterface::is_change(note))
-            || !self.transparent_outputs.is_empty()
-    }
-
-    /// TODO: Add Doc Comment Here!
-    fn pool_change_returned<D: DomainWalletExt>(&self) -> u64
-    where
-        <D as zcash_note_encryption::Domain>::Note: PartialEq + Clone,
-        <D as zcash_note_encryption::Domain>::Recipient: super::traits::Recipient,
-    {
-        D::sum_pool_change(self)
-    }
-
-    /// TODO: Add Doc Comment Here!
-    pub fn total_change_returned(&self) -> u64 {
-        self.pool_change_returned::<sapling_crypto::note_encryption::SaplingDomain>()
-            + self.pool_change_returned::<orchard::note_encryption::OrchardDomain>()
-    }
-
-    /// TODO: Add Doc Comment Here!
     pub fn total_value_spent(&self) -> u64 {
         self.value_spent_by_pool().iter().sum()
     }
@@ -313,6 +278,28 @@ impl TransactionRecord {
             });
         }
         all
+    }
+
+    /// This means there's at least one note that adds funds
+    /// to this capabilities control
+    pub fn is_incoming_transaction(&self) -> bool {
+        self.sapling_notes
+            .iter()
+            .any(|note| !ShieldedNoteInterface::is_change(note))
+            || self
+                .orchard_notes
+                .iter()
+                .any(|note| !ShieldedNoteInterface::is_change(note))
+            || !self.transparent_outputs.is_empty()
+    }
+}
+#[cfg(feature = "lightclient-deprecated")]
+impl TransactionRecord {
+    /// TODO: Add Doc Comment Here!
+    // TODO: This is incorrect in the edge case where where we have a send-to-self with
+    // no text memo and 0-value fee
+    pub fn is_outgoing_transaction(&self) -> bool {
+        (!self.outgoing_tx_data.is_empty()) || self.total_value_spent() != 0
     }
 }
 // read/write
@@ -747,17 +734,8 @@ mod tests {
     pub fn blank_record() {
         let new = TransactionRecordBuilder::default().build();
         assert_eq!(new.total_transparent_value_spent, 0);
-        assert!(!new.is_outgoing_transaction());
         assert!(!new.is_incoming_transaction());
         // assert_eq!(new.net_spent(), 0);
-        assert_eq!(
-            new.pool_change_returned::<orchard::note_encryption::OrchardDomain>(),
-            0
-        );
-        assert_eq!(
-            new.pool_change_returned::<sapling_crypto::note_encryption::SaplingDomain>(),
-            0
-        );
         assert_eq!(new.total_value_received(), 0);
         assert_eq!(new.total_value_spent(), 0);
         assert_eq!(new.value_outgoing(), 0);
