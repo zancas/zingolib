@@ -631,7 +631,7 @@ impl Command for SpendableBalanceCommand {
             }
         };
         RT.block_on(async move {
-            match lightclient.spendable_balance(address).await {
+            match lightclient.shielded_spendable_balance(address).await {
                 Ok(bal) => {
                     object! {
                         "balance" => bal.into_u64(),
