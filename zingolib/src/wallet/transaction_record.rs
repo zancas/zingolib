@@ -29,7 +29,7 @@ use crate::{
 };
 
 ///  Everything (SOMETHING) about a transaction
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TransactionRecord {
     /// the relationship of the transaction to the blockchain. can be either Broadcast (to mempool}, or Confirmed.
     pub status: zingo_status::confirmation_status::ConfirmationStatus,
