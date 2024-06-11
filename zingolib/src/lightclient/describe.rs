@@ -83,7 +83,8 @@ impl LightClient {
         JsonValue::Array(objectified_addresses)
     }
 
-    /// TODO: Add Doc Comment Here!
+    /// This descriptive helper returns a strong type, which is preferable to methods that
+    /// incorporate JsonValue
     pub async fn do_balance(&self) -> PoolBalances {
         PoolBalances {
             sapling_balance: self

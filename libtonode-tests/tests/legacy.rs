@@ -2748,7 +2748,7 @@ mod slow {
             regtest_network,
         )
         .await;
-        println!("Shutting down initial zcd/lwd unneeded processes");
+        //dbg!("Shutting down initial zcd/lwd unneeded processes");
         drop(cph);
 
         let zcd_datadir = &regtest_manager.zcashd_data_dir;
@@ -2787,25 +2787,23 @@ mod slow {
         let zingo_dest = zingo_datadir.to_string_lossy().to_string();
         std::process::Command::new("cp")
             .arg("-f")
-            .arg(zingo_source)
-            .arg(&zingo_dest)
+            .arg(zingo_source) // This corresponds to the old wallet file
+            .arg(&zingo_dest) // This is where the test will look to load a wallet
             .output()
             .expect("wallet copy failed");
         let _cph = regtest_manager.launch(false).unwrap();
-        println!("loading wallet");
+        //dbg!("loading wallet");
         let (wallet, conf) =
             zingo_testutils::load_wallet(zingo_dest.into(), ChainType::Regtest(regtest_network))
                 .await;
-        println!("setting uri");
+        //dbg!("setting uri");
         *conf.lightwalletd_uri.write().unwrap() = faucet.get_server_uri();
-        println!("creating lightclient");
+        //dbg!("creating lightclient");
         let recipient = LightClient::create_from_wallet_async(wallet, conf)
             .await
             .unwrap();
-        println!(
-            "pre-sync transactions: {}",
-            recipient.do_list_transactions().await.pretty(2)
-        );
+        //dbg!("Pre-sync transactions:");
+        //dbg!(recipient.do_list_transactions().await);
         let expected_pre_sync_transactions = r#"[
   {
     "block_height": 3,
@@ -2845,6 +2843,18 @@ mod slow {
             expected_pre_sync_transactions,
             recipient.do_list_transactions().await.pretty(2)
         );
+        let expected_pre_sync_balance = PoolBalances {
+            sapling_balance: Some(0),
+            verified_sapling_balance: Some(0),
+            spendable_sapling_balance: Some(0),
+            unverified_sapling_balance: Some(0),
+            orchard_balance: Some(180000),
+            verified_orchard_balance: Some(180000),
+            spendable_orchard_balance: Some(180000),
+            unverified_orchard_balance: Some(0),
+            transparent_balance: Some(0),
+        };
+        assert_eq!(expected_pre_sync_balance, recipient.do_balance().await);
         recipient.do_sync(false).await.unwrap();
         let expected_post_sync_transactions = r#"[
   {
