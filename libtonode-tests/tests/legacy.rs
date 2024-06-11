@@ -2419,6 +2419,9 @@ mod slow {
 
         let sent_to_self = 10;
         // Send recipient->recipient, to make tree equality check at the end simpler
+        // Note the client originally had sapling funds the below costs more under
+        // zip317 than it did before.
+        let value = 90_000; // Increased fee of 10_000
         zingo_testutils::send_value_between_clients_and_sync(
             &regtest_manager,
             &recipient,
@@ -2607,17 +2610,13 @@ mod slow {
         // Two unspent notes: one change, pending, one from faucet, confirmed
         assert_eq!(notes["unspent_orchard_notes"].len(), 2);
         assert_eq!(notes["unspent_sapling_notes"].len(), 0);
-        let note = notes["unspent_orchard_notes"][1].clone();
-        assert_eq!(note["created_in_txid"], sent_transaction_id);
-        dbg!(value);
-        dbg!(sent_value);
-        dbg!(fee);
-        dbg!(sent_to_self);
+        let note_1 = notes["unspent_orchard_notes"][1].clone();
+        assert_eq!(note_1["created_in_txid"], sent_transaction_id);
         assert_eq!(
-            note["value"].as_u64().unwrap(),
+            note_1["value"].as_u64().unwrap(),
             value - sent_value - fee - sent_to_self
         );
-        assert!(note["pending"].as_bool().unwrap());
+        assert!(note_1["pending"].as_bool().unwrap());
         assert_eq!(transactions.len(), 3);
 
         // 7. Mine 100 blocks, so the mempool expires
