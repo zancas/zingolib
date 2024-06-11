@@ -2494,6 +2494,28 @@ mod slow {
         .first()
         .to_string();
 
+        let record = recipient
+            .wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await
+            .transaction_records_by_id
+            .get(
+                &crate::utils::conversion::txid_from_hex_encoded_str(&sent_transaction_id).unwrap(),
+            )
+            .unwrap()
+            .clone();
+        let fee = recipient
+            .wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await
+            .transaction_records_by_id
+            .calculate_transaction_fee(&record)
+            .unwrap();
+
         // Sync recipient
         recipient.do_sync(false).await.unwrap();
         dbg!(
@@ -2587,9 +2609,13 @@ mod slow {
         assert_eq!(notes["unspent_sapling_notes"].len(), 0);
         let note = notes["unspent_orchard_notes"][1].clone();
         assert_eq!(note["created_in_txid"], sent_transaction_id);
+        dbg!(value);
+        dbg!(sent_value);
+        dbg!(fee);
+        dbg!(sent_to_self);
         assert_eq!(
             note["value"].as_u64().unwrap(),
-            value - sent_value - (2 * u64::from(MINIMUM_FEE)) - sent_to_self
+            value - sent_value - fee - sent_to_self
         );
         assert!(note["pending"].as_bool().unwrap());
         assert_eq!(transactions.len(), 3);
