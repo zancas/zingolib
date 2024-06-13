@@ -1867,6 +1867,52 @@ mod slow {
             spent_value
         );
     }
+
+    /// In the pending case the change note is not correctly added the
+    /// "unspent_orchard_notes" list, as returned by do_list_notes
+    #[tokio::test]
+    async fn check_for_pending_change() {
+        // Setup
+        let (regtest_manager, _cph, faucet, recipient, _txid) =
+            scenarios::faucet_funded_recipient_default(123_456).await;
+
+        // 1. Demonstrate production (probably correct(behavior).
+        from_inputs::send(
+            &recipient,
+            vec![(&get_base_address_macro!(faucet, "unified"), 10_000, None)],
+        )
+        .await
+        .unwrap();
+        let notes = recipient.do_list_notes(true).await;
+        assert_eq!(notes["unspent_orchard_notes"].len(), 1);
+        // Has a new (pending) unspent note (the change)
+        // This is the expected change note, present when "send" is used.
+        let pending_change = notes["unspent_orchard_notes"][0].clone();
+        assert_eq!(pending_change["is_change"], true);
+        assert_eq!(pending_change["pending"], true);
+        assert_eq!(pending_change["spendable"], false);
+        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
+            .await
+            .unwrap();
+
+        from_inputs::quick_send(
+            &recipient,
+            vec![(&get_base_address_macro!(faucet, "unified"), 10_000, None)],
+        )
+        .await
+        .unwrap()
+        .first()
+        .to_string();
+
+        let notes = recipient.do_list_notes(true).await;
+        //  Oopps..  no new change note is available!
+        assert_eq!(notes["unspent_orchard_notes"].len(), 1);
+        let pending_change = notes["unspent_orchard_notes"][0].clone();
+        assert_eq!(pending_change["is_change"], true);
+        assert_eq!(pending_change["pending"], true);
+        assert_eq!(pending_change["spendable"], false);
+    }
+
     #[tokio::test]
     async fn sapling_incoming_sapling_outgoing() {
         let (regtest_manager, _cph, faucet, recipient) =
