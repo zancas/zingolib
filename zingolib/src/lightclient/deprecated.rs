@@ -1,6 +1,6 @@
 use std::cmp;
 
-use crate::wallet::transaction_record::TransactionRecord;
+use crate::wallet::transaction_record::{TransactionKind, TransactionRecord};
 
 use super::*;
 use crate::wallet::notes::OutputInterface;
@@ -112,19 +112,22 @@ impl LightClient {
 
     /// TODO: Add Doc Comment Here!
     pub async fn do_list_transactions(&self) -> JsonValue {
-        // Create a list of TransactionItems from wallet transactions
-        let mut consumer_ui_notes = self
+        let trbid = &self
             .wallet
-            .transaction_context.transaction_metadata_set
+            .transaction_context
+            .transaction_metadata_set
             .read()
             .await
-            .transaction_records_by_id
+            .transaction_records_by_id;
+        // Create a list of TransactionItems from wallet transactions
+        let mut consumer_ui_notes = trbid
             .iter()
             .flat_map(|(txid, wallet_transaction)| {
+                let transaction_kind = trbid.transaction_kind(wallet_transaction);
                 let mut consumer_notes_by_tx: Vec<JsonValue> = vec![];
 
                 let total_transparent_received = wallet_transaction.transparent_outputs.iter().map(|u| u.value).sum::<u64>();
-                if wallet_transaction.is_outgoing_transaction() {
+                if let TransactionKind::Sent(_) = transaction_kind {
                     // If money was spent, create a consumer_ui_note. For this, we'll subtract
                     // all the change notes + Utxos
                     consumer_notes_by_tx.push(Self::append_change_notes(wallet_transaction, total_transparent_received));
@@ -145,7 +148,7 @@ impl LightClient {
                         // If this transaction is outgoing:
                         // Then we've already accounted for the entire balance.
 
-                        if !wallet_transaction.is_outgoing_transaction() {
+                        if let TransactionKind::Received = transaction_kind {
                             // If not, we've added sapling/orchard, and need to add transparent
                             let old_amount = transaction.remove("amount").as_i64().unwrap();
                             transaction.insert("amount", old_amount + net_transparent_value).unwrap();
