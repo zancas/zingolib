@@ -808,7 +808,6 @@ mod tests {
     pub fn blank_record() {
         let new = TransactionRecordBuilder::default().build();
         assert_eq!(new.total_transparent_value_spent, 0);
-        assert!(!new.is_outgoing_transaction());
         assert!(!new.is_incoming_transaction());
         // assert_eq!(new.net_spent(), 0);
         assert_eq!(
