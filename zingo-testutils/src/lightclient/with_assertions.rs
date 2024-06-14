@@ -4,37 +4,11 @@ use zcash_client_backend::PoolType;
 use zingolib::lightclient::LightClient;
 
 use crate::{
-    assertions::assert_proposal_vs_records_matched_total_fee,
-    assertions::assert_proposal_vs_records_matched_total_output_value,
+    assertions::assert_receiver_fee,
+    assertions::assert_sender_fee,
     chain_generic_tests::conduct_chain::ConductChain,
     lightclient::{from_inputs, get_base_address},
 };
-
-/// a test-only generic version of send that includes assertions that the proposal was fulfilled
-/// NOTICE this function bumps the chain and syncs the client
-/// only compatible with zip317
-/// returns the total fee for the transfer
-pub async fn propose_send_bump_sync<CC>(
-    environment: &mut CC,
-    client: &LightClient,
-    raw_receivers: Vec<(&str, u64, Option<&str>)>,
-) -> u64
-where
-    CC: ConductChain,
-{
-    let proposal = from_inputs::propose(client, raw_receivers).await.unwrap();
-    let txids = client
-        .complete_and_broadcast_stored_proposal()
-        .await
-        .unwrap();
-
-    environment.bump_chain().await;
-
-    assert_proposal_vs_records_matched_total_fee(client, &proposal, &txids).await;
-    client.do_sync(false).await.unwrap();
-
-    assert_proposal_vs_records_matched_total_fee(client, &proposal, &txids).await
-}
 
 /// this version assumes a single recipient and measures that the recipient also recieved the expected balances
 /// test-only generic
@@ -68,14 +42,23 @@ where
         .await
         .unwrap();
 
-    environment.bump_chain().await;
+    // digesting the calculated transaction
+    let recorded_fee = assert_sender_fee(sender, &proposal, &txids).await;
 
-    recipient.do_sync(false).await.unwrap();
-    assert_proposal_vs_records_matched_total_output_value(recipient, &proposal, &txids).await;
-
-    assert_proposal_vs_records_matched_total_fee(sender, &proposal, &txids).await;
+    // mempool scan shows the same
     sender.do_sync(false).await.unwrap();
-    assert_proposal_vs_records_matched_total_fee(sender, &proposal, &txids).await
+    assert_sender_fee(sender, &proposal, &txids).await;
+    // recipient.do_sync(false).await.unwrap();
+    // assert_receiver_fee(recipient, &proposal, &txids).await;
+
+    environment.bump_chain().await;
+    // chain scan shows the same
+    sender.do_sync(false).await.unwrap();
+    assert_sender_fee(sender, &proposal, &txids).await;
+    recipient.do_sync(false).await.unwrap();
+    assert_receiver_fee(recipient, &proposal, &txids).await;
+
+    recorded_fee
 }
 
 /// a test-only generic version of shield that includes assertions that the proposal was fulfilled
@@ -92,10 +75,17 @@ where
         .await
         .unwrap();
 
-    environment.bump_chain().await;
+    // digesting the calculated transaction
+    let recorded_fee = assert_sender_fee(client, &proposal, &txids).await;
 
-    assert_proposal_vs_records_matched_total_fee(client, &proposal, &txids).await;
+    // mempool scan shows the same
     client.do_sync(false).await.unwrap();
+    assert_sender_fee(client, &proposal, &txids).await;
 
-    assert_proposal_vs_records_matched_total_fee(client, &proposal, &txids).await
+    environment.bump_chain().await;
+    // chain scan shows the same
+    client.do_sync(false).await.unwrap();
+    assert_sender_fee(client, &proposal, &txids).await;
+
+    recorded_fee
 }
