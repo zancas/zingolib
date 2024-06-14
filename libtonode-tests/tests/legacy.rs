@@ -695,7 +695,11 @@ mod slow {
     use zingo_testutils::lightclient::{from_inputs, get_fees_paid_by_client};
     use zingolib::{
         lightclient::{propose::ProposeSendError, send::send_with_proposal::QuickSendError},
-        wallet::tx_map_and_maybe_trees::TxMapAndMaybeTreesTraitError,
+        utils::conversion::txid_from_hex_encoded_str,
+        wallet::{
+            notes::query::{OutputPoolQuery, OutputQuery, OutputSpendStatusQuery},
+            tx_map_and_maybe_trees::TxMapAndMaybeTreesTraitError,
+        },
     };
 
     use super::*;
@@ -1817,55 +1821,202 @@ mod slow {
         let (regtest_manager, _cph, faucet, recipient) =
             scenarios::faucet_recipient_default().await;
 
-        // Give the faucet a block reward
-        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &faucet, 1)
-            .await
-            .unwrap();
-        let value = 100_000;
+        let start_funds = 100_000;
 
         // Send some sapling value to the recipient
-        let txid = zingo_testutils::send_value_between_clients_and_sync(
+        let receipt_txid = zingo_testutils::send_value_between_clients_and_sync(
             &regtest_manager,
             &faucet,
             &recipient,
-            value,
+            start_funds,
             "sapling",
         )
         .await
         .unwrap();
+        {
+            let tmds = recipient
+                .wallet
+                .transaction_context
+                .transaction_metadata_set
+                .read()
+                .await;
+            let receipt_tr = tmds
+                .transaction_records_by_id
+                .get(&txid_from_hex_encoded_str(&receipt_txid).unwrap())
+                .unwrap();
+            // The state of the original funding note:
+            assert_eq!(
+                start_funds,
+                receipt_tr.query_sum_value(OutputQuery {
+                    spend_status: OutputSpendStatusQuery::only_unspent(),
+                    pools: OutputPoolQuery {
+                        orchard: false,
+                        transparent: false,
+                        sapling: true
+                    }
+                })
+            );
+        }
+        let exit_funds = 250;
+        let exit_zaddr = get_base_address_macro!(faucet, "sapling");
+        let exit_txid = from_inputs::send(&recipient, vec![(&exit_zaddr, exit_funds, None)])
+            .await
+            .unwrap();
+        //.first()
+        //.to_string();
+        dbg!("send");
+        {
+            let change_magnitude = start_funds - exit_funds - 20_000; // 1s in and 1o out
+            let tmds = recipient
+                .wallet
+                .transaction_context
+                .transaction_metadata_set
+                .read()
+                .await;
+            let receipt_tr = tmds
+                .transaction_records_by_id
+                .get(&txid_from_hex_encoded_str(&receipt_txid).unwrap())
+                .unwrap();
+            let send_tr = tmds
+                .transaction_records_by_id
+                .get(&txid_from_hex_encoded_str(&exit_txid).unwrap())
+                .unwrap();
+            // The state of the original funding note:
+            //dbg!(&send_tr.orchard_notes[0].orchard_crypto_note.value());
+            dbg!(&send_tr.txid);
+            assert_eq!(
+                start_funds,
+                receipt_tr.query_sum_value(OutputQuery {
+                    spend_status: OutputSpendStatusQuery {
+                        unspent: false,
+                        pending_spent: true,
+                        spent: false
+                    },
+                    pools: OutputPoolQuery {
+                        orchard: false,
+                        transparent: false,
+                        sapling: true
+                    }
+                })
+            );
+            assert_eq!(
+                change_magnitude,
+                send_tr.query_sum_value(OutputQuery {
+                    spend_status: OutputSpendStatusQuery {
+                        unspent: true,
+                        pending_spent: true,
+                        spent: true
+                    },
+                    pools: OutputPoolQuery {
+                        orchard: true,
+                        transparent: true,
+                        sapling: true
+                    }
+                })
+            );
+        }
+        /*
+        assert_eq!(
+            start_funds - send_to_faucet_value - 20_000,
+            receipt_tr.query_sum_value(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_pending_spent(),
+                pools: OutputPoolQuery {
+                    orchard: true,
+                    transparent: false,
+                    sapling: false
+                }
+            })
+        );*/
+        /*
+        assert_eq!(
+            start_funds,
+            receipt_tr.query_sum_value(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_pending_spent(),
+                pools: OutputPoolQuery {
+                    orchard: false,
+                    transparent: false,
+                    sapling: true
+                }
+            })
+        );
+        // The initial funding is now received by the recipient, and called receipt.
+        let receipt = recipient.do_list_transactions().await[0].clone();
+        assert_eq!(receipt["block_height"].as_u64().unwrap(), 4);
+        assert_eq!(receipt["txid"], receipt_txid.to_string());
+        assert_eq!(receipt["amount"].as_i64().unwrap(), (start_funds as i64));
 
+        // The recipient, not sends a z->z tx of 250
         let spent_value = 250;
 
         // Construct transaction to wallet-external recipient-address.
         let exit_zaddr = get_base_address_macro!(faucet, "sapling");
-        let spent_txid =
-            from_inputs::quick_send(&recipient, vec![(&exit_zaddr, spent_value, None)])
-                .await
-                .unwrap()
-                .first()
-                .to_string();
+        let send_txid = from_inputs::send(&recipient, vec![(&exit_zaddr, spent_value, None)])
+            .await
+            .unwrap();
+        //.first()
+        //.to_string();
 
+        let sap_to_ext_sap = recipient.do_list_transactions().await[1].clone();
+        assert_eq!(sap_to_ext_sap["block_height"].as_u64().unwrap(), 5);
+        assert_eq!(sap_to_ext_sap["txid"], send_txid);
+        let observed_omd = json::stringify(sap_to_ext_sap["outgoing_metadata"].clone());
+        let expected_omd = r#"[{"address":"zregtestsapling1fmq2ufux3gm0v8qf7x585wj56le4wjfsqsj27zprjghntrerntggg507hxh2ydcdkn7sx8kya7p","value":250,"memo":null}]"#;
+        assert_eq!(observed_omd, expected_omd);
+        let tmds = recipient
+            .wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await;
+        let receipt_tr = tmds
+            .transaction_records_by_id
+            .get(&txid_from_hex_encoded_str(&receipt_txid).unwrap())
+            .unwrap();
+        // The state of the original funding note:
+        assert_eq!(
+            start_funds,
+            receipt_tr.query_sum_value(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_pending_spent(),
+                pools: OutputPoolQuery {
+                    orchard: false,
+                    transparent: false,
+                    sapling: true
+                }
+            })
+        );
         zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
-        // 5. Check the transaction list to make sure we got all transactions
-        let list = recipient.do_list_transactions().await;
-
-        assert_eq!(list[0]["block_height"].as_u64().unwrap(), 5);
-        assert_eq!(list[0]["txid"], txid.to_string());
-        assert_eq!(list[0]["amount"].as_i64().unwrap(), (value as i64));
-
-        assert_eq!(list[1]["block_height"].as_u64().unwrap(), 6);
-        assert_eq!(list[1]["txid"], spent_txid);
         assert_eq!(
-            list[1]["amount"].as_i64().unwrap(),
+            start_funds,
+            receipt_tr.query_sum_value(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_pending_spent(),
+                pools: OutputPoolQuery {
+                    orchard: false,
+                    transparent: false,
+                    sapling: true
+                }
+            })
+        );
+        let send_tr = tmds
+            .transaction_records_by_id
+            .get(&txid_from_hex_encoded_str(&send_txid).unwrap())
+            .unwrap();
+        assert_eq!(
+            spent_value,
+            send_tr.query_sum_value(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_unspent(),
+                pools: OutputPoolQuery {
+                    orchard: false,
+                    transparent: false,
+                    sapling: true
+                }
+            })
+        );
+        assert_eq!(
+            sap_to_ext_sap["amount"].as_i64().unwrap(),
             -((spent_value + u64::from(MINIMUM_FEE)) as i64)
-        );
-        assert_eq!(list[1]["outgoing_metadata"][0]["address"], exit_zaddr);
-        assert_eq!(
-            list[1]["outgoing_metadata"][0]["value"].as_u64().unwrap(),
-            spent_value
-        );
+        );*/
     }
     #[tokio::test]
     async fn sapling_incoming_sapling_outgoing() {
