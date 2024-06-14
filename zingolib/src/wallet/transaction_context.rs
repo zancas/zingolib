@@ -109,7 +109,7 @@ pub mod decrypt_transaction {
                 {
                     if let TransactionKind::Received = tx_map
                         .transaction_records_by_id
-                        .transaction_kind(transaction_record)
+                        .get_transaction_kind(transaction_record)
                     {
                         if let Some(t_bundle) = transaction.transparent_bundle() {
                             for vout in &t_bundle.vout {

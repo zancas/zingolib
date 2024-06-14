@@ -405,7 +405,7 @@ impl LightClient {
         transaction_record: &TransactionRecord,
         transaction_records: &TransactionRecordsById,
     ) -> Result<(), ValueTransferRecordingError> {
-        let transaction_kind = transaction_records.transaction_kind(transaction_record);
+        let transaction_kind = transaction_records.get_transaction_kind(transaction_record);
 
         let (block_height, datetime, price, pending) = (
             transaction_record.status.get_height(),

@@ -246,9 +246,11 @@ impl TransactionRecord {
         }
     }
 
-    /// TODO: Add Doc Comment Here!
-    // TODO: This is incorrect in the edge case where where we have a send-to-self with
-    // no text memo and 0-value fee
+    #[deprecated(
+        note = "replaced by `get_transaction_kind` method for [`crate::wallet::transaction_records_by_id::
+                ↪ TransactionRecordsById"
+    )]
+    /// DEPRECATED, use get_transaction_kind instead
     pub fn is_outgoing_transaction(&self) -> bool {
         (!self.outgoing_tx_data.is_empty()) || self.total_value_spent() != 0
     }

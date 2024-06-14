@@ -123,7 +123,7 @@ impl LightClient {
         let mut consumer_ui_notes = trbid
             .iter()
             .flat_map(|(txid, wallet_transaction)| {
-                let transaction_kind = trbid.transaction_kind(wallet_transaction);
+                let transaction_kind = trbid.get_transaction_kind(wallet_transaction);
                 let mut consumer_notes_by_tx: Vec<JsonValue> = vec![];
 
                 let total_transparent_received = wallet_transaction.transparent_outputs.iter().map(|u| u.value).sum::<u64>();

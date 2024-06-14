@@ -370,7 +370,7 @@ impl TransactionRecordsById {
     /// Creating Capability.  Such a transaction would violate ZIP317, but could exist in
     /// the Zcash protocol
     ///  TODO:   Test and handle 0-value, 0-fee transaction
-    pub(crate) fn transaction_kind(&self, query_record: &TransactionRecord) -> TransactionKind {
+    pub(crate) fn get_transaction_kind(&self, query_record: &TransactionRecord) -> TransactionKind {
         let mut sapling_spends: Vec<&SaplingNote> =
             Vec::with_capacity(query_record.spent_sapling_nullifiers.len());
         query_record
