@@ -2306,13 +2306,17 @@ mod slow {
 
         // Notes are not in deterministic order after rescan. Instead, iterate over all
         // the notes and check that they exist post-rescan
-        for (field_name, field) in pre_rescan_notes.entries() {
-            for note in field.members() {
-                assert!(post_rescan_notes[field_name]
-                    .members()
-                    .any(|post_rescan_note| post_rescan_note == note));
+        for (field_name, pre_rescan_field) in pre_rescan_notes.entries() {
+            for note in pre_rescan_field.members() {
+                assert!(
+                    post_rescan_notes[field_name]
+                        .members()
+                        .any(|post_rescan_note| post_rescan_note == note),
+                    "{}",
+                    json::stringify_pretty(note.clone(), 2)
+                );
             }
-            assert_eq!(field.len(), post_rescan_notes[field_name].len());
+            assert_eq!(pre_rescan_field.len(), post_rescan_notes[field_name].len());
         }
         /*
         let post_rescan_transactions = faucet.do_list_transactions().await;
