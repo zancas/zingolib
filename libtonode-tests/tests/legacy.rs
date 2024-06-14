@@ -2280,54 +2280,62 @@ mod slow {
             .await
             .unwrap();
         let faucet_sapling_addr = get_base_address_macro!(faucet, "sapling");
+        let mut txids = vec![];
         for memo in [None, Some("Second Transaction")] {
-            from_inputs::send(
-                &faucet,
-                vec![(
-                    faucet_sapling_addr.as_str(),
-                    {
-                        let balance = faucet.do_balance().await;
-                        dbg!(balance.spendable_sapling_balance.unwrap())
-                            + dbg!(balance.spendable_orchard_balance.unwrap())
-                    } - u64::from(MINIMUM_FEE),
-                    memo,
-                )],
-            )
-            .await
-            .unwrap();
+            txids.push(
+                crate::utils::conversion::txid_from_hex_encoded_str(
+                    &from_inputs::send(
+                        &faucet,
+                        vec![(
+                            faucet_sapling_addr.as_str(),
+                            {
+                                let balance = faucet.do_balance().await;
+                                dbg!(balance.spendable_sapling_balance.unwrap())
+                                    + dbg!(balance.spendable_orchard_balance.unwrap())
+                            } - u64::from(MINIMUM_FEE),
+                            memo,
+                        )],
+                    )
+                    .await
+                    .unwrap(),
+                )
+                .unwrap(),
+            );
             zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &faucet, 1)
                 .await
                 .unwrap();
         }
-        //let pre_rescan_transactions = faucet.do_list_transactions().await;
-        let pre_rescan_notes = faucet.do_list_notes(true).await;
-        faucet.do_rescan().await.unwrap();
-        let post_rescan_notes = faucet.do_list_notes(true).await;
 
-        // Notes are not in deterministic order after rescan. Instead, iterate over all
-        // the notes and check that they exist post-rescan
-        for (field_name, pre_rescan_field) in pre_rescan_notes.entries() {
-            for note in pre_rescan_field.members() {
-                assert!(
-                    post_rescan_notes[field_name]
-                        .members()
-                        .any(|post_rescan_note| post_rescan_note == note),
-                    "{}",
-                    json::stringify_pretty(note.clone(), 2)
-                );
-            }
-            assert_eq!(pre_rescan_field.len(), post_rescan_notes[field_name].len());
+        macro_rules! get_otd {
+            ($txid:ident) => {
+                faucet
+                    .wallet
+                    .transaction_context
+                    .transaction_metadata_set
+                    .read()
+                    .await
+                    .transaction_records_by_id
+                    .get($txid)
+                    .unwrap()
+                    .outgoing_tx_data
+                    .clone()
+            };
         }
-        /*
-        let post_rescan_transactions = faucet.do_list_transactions().await;
+        let nom_txid = &txids[0];
+        let memo_txid = &txids[1];
+        let pre_rescan_no_memo_self_send_outgoing_tx_data = get_otd!(nom_txid);
+        let pre_rescan_with_memo_self_send_outgoing_tx_data = get_otd!(memo_txid);
+        faucet.do_rescan().await.unwrap();
+        let post_rescan_no_memo_self_send_outgoing_tx_data = get_otd!(nom_txid);
+        let post_rescan_with_memo_self_send_outgoing_tx_data = get_otd!(memo_txid);
         assert_eq!(
-            transactions,
-            post_rescan_transactions,
-            "Pre-Rescan: {}\n\n\nPost-Rescan: {}",
-            json::stringify_pretty(transactions.clone(), 4),
-            json::stringify_pretty(post_rescan_transactions.clone(), 4)
+            pre_rescan_no_memo_self_send_outgoing_tx_data,
+            post_rescan_no_memo_self_send_outgoing_tx_data
         );
-        */
+        assert_eq!(
+            pre_rescan_with_memo_self_send_outgoing_tx_data,
+            post_rescan_with_memo_self_send_outgoing_tx_data
+        );
     }
     #[tokio::test]
     async fn rescan_still_have_outgoing_metadata() {
