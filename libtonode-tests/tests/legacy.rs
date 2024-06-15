@@ -2352,13 +2352,9 @@ mod slow {
         // In addition to testing the order in which notes are selected this test:
         //   * sends to a sapling address
         //   * sends back to the original sender's UA
-        let (regtest_manager, _cph, faucet, recipient) =
-            scenarios::faucet_recipient_default().await;
-        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &faucet, 5)
-            .await
-            .unwrap();
+        let (regtest_manager, _cph, faucet, client_2) = scenarios::faucet_recipient_default().await;
 
-        let client_2_saplingaddress = get_base_address_macro!(recipient, "sapling");
+        let client_2_saplingaddress = get_base_address_macro!(client_2, "sapling");
         // Send three transfers in increasing 1000 zat increments
         // These are sent from the coinbase funded client which will
         // subsequently receive funding via it's orchard-packed UA.
@@ -2378,14 +2374,14 @@ mod slow {
         .await
         .unwrap();
 
-        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 5)
+        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &client_2, 1)
             .await
             .unwrap();
         // We know that the largest single note that 2 received from 1 was 3000, for 2 to send
         // 3000 back to 1 it will have to collect funds from two notes to pay the full 3000
         // plus the transaction fee.
         from_inputs::send(
-            &recipient,
+            &client_2,
             vec![(
                 &get_base_address_macro!(faucet, "unified"),
                 30000,
@@ -2394,11 +2390,11 @@ mod slow {
         )
         .await
         .unwrap();
-        let client_2_notes = recipient.do_list_notes(false).await;
+
+        let client_2_notes = client_2.do_list_notes(false).await;
         // The 3000 zat note to cover the value, plus another for the tx-fee.
-        let first_value = client_2_notes["pending_sapling_notes"][0]["value"]
-            .as_fixed_point_u64(0)
-            .unwrap();
+        let first_note = client_2_notes["pending_sapling_notes"][0].clone();
+        let first_value = first_note["value"].as_fixed_point_u64(0).unwrap();
         let second_value = client_2_notes["pending_sapling_notes"][1]["value"]
             .as_fixed_point_u64(0)
             .unwrap();
@@ -2431,10 +2427,10 @@ mod slow {
         // After sync the unspent_sapling_notes should go to 3000.
         assert_eq!(non_change_note_values.iter().sum::<u64>(), 10000u64);
 
-        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 5)
+        zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &client_2, 1)
             .await
             .unwrap();
-        let client_2_post_transaction_notes = recipient.do_list_notes(false).await;
+        let client_2_post_transaction_notes = client_2.do_list_notes(false).await;
         assert_eq!(
             client_2_post_transaction_notes["pending_sapling_notes"].len(),
             0
