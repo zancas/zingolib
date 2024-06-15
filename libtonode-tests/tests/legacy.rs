@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+use zcash_client_backend::ShieldedProtocol::Sapling;
 
 use json::JsonValue;
 use orchard::note_encryption::OrchardDomain;
@@ -699,6 +700,7 @@ mod slow {
     use zcash_client_backend::{PoolType, ShieldedProtocol};
     use zcash_primitives::consensus::NetworkConstants;
     use zingo_testutils::lightclient::from_inputs;
+    use zingolib::wallet::notes::query::{OutputPoolQuery, OutputQuery, OutputSpendStatusQuery};
 
     use super::*;
 
@@ -2392,7 +2394,23 @@ mod slow {
         .unwrap();
 
         let client_2_notes = client_2.do_list_notes(false).await;
+        let notes_from_query = client_2
+            .wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await
+            .transaction_records_by_id
+            .get_stipulated_noteids(OutputQuery {
+                spend_status: OutputSpendStatusQuery::only_pending_spent(),
+                pools: OutputPoolQuery::one_pool(PoolType::Shielded(Sapling)),
+            });
         // The 3000 zat note to cover the value, plus another for the tx-fee.
+        assert_eq!(
+            notes_from_query.len(),
+            client_2_notes["pending_sapling_notes"].len()
+        );
+        panic!();
         let first_note = client_2_notes["pending_sapling_notes"][0].clone();
         let first_value = first_note["value"].as_fixed_point_u64(0).unwrap();
         let second_value = client_2_notes["pending_sapling_notes"][1]["value"]

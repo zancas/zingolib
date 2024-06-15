@@ -60,7 +60,7 @@ impl LightClient {
             .read()
             .await
             .transaction_records_by_id
-            .query_for_ids(include_notes)
+            .get_stipulated_noteids(include_notes)
     }
 
     /// TODO: Add Doc Comment Here!
