@@ -25,7 +25,11 @@ use crate::{
             OutgoingTxData, TransactionRecord,
         },
         keys::address_from_pubkeyhash,
-        notes::{query::OutputQuery, OutputInterface},
+        notes::{
+            self,
+            query::{OutputQuery, OutputSpendStatusQuery},
+            OutputInterface,
+        },
         transaction_records_by_id::TransactionRecordsById,
         LightWallet,
     },
@@ -680,6 +684,40 @@ impl LightClient {
         )
     }
 
+    /// Get all outputs owned by the Capability
+    pub async fn list_all_outputs(&self) -> Vec<notes::AnyPoolOutput> {
+        self.wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await
+            .transaction_records_by_id
+            .values()
+            .flat_map(|record| {
+                notes::AnyPoolOutput::get_all_outputs_with_status(
+                    record,
+                    OutputSpendStatusQuery::any(),
+                )
+            })
+            .collect()
+    }
+    /// Get all unspent outputs owned by the Capability
+    pub async fn list_all_unspent_outputs(&self) -> Vec<notes::AnyPoolOutput> {
+        self.wallet
+            .transaction_context
+            .transaction_metadata_set
+            .read()
+            .await
+            .transaction_records_by_id
+            .values()
+            .flat_map(|record| {
+                notes::AnyPoolOutput::get_all_outputs_with_status(
+                    record,
+                    OutputSpendStatusQuery::only_unspent(),
+                )
+            })
+            .collect()
+    }
     /// Return a list of notes, if `all_notes` is false, then only return unspent notes
     ///  * TODO:  This fn does not handle failure it must be promoted to return a Result
     ///  * TODO:  The Err variant of the result must be a proper type
