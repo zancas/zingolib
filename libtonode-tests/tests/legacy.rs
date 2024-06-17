@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
-use zcash_client_backend::ShieldedProtocol::Sapling;
+use zcash_client_backend::PoolType::{Shielded, Transparent};
+use zcash_client_backend::ShieldedProtocol::{Orchard, Sapling};
 
 use json::JsonValue;
 use orchard::note_encryption::OrchardDomain;
@@ -700,7 +701,10 @@ mod slow {
     use zcash_client_backend::{PoolType, ShieldedProtocol};
     use zcash_primitives::consensus::NetworkConstants;
     use zingo_testutils::lightclient::from_inputs;
-    use zingolib::wallet::notes::query::{OutputPoolQuery, OutputQuery, OutputSpendStatusQuery};
+    use zingolib::wallet::notes::{
+        query::{OutputPoolQuery, OutputQuery, OutputSpendStatusQuery},
+        AnyPoolOutput, OutputInterface,
+    };
 
     use super::*;
 
@@ -2410,7 +2414,7 @@ mod slow {
                 .map(|n| {
                     (
                         client_2_saplingaddress.as_str(),
-                        n * 10000,
+                        n * 10_000,
                         Some(memos[(n - 1) as usize]),
                     )
                 })
@@ -2422,6 +2426,30 @@ mod slow {
         zingo_testutils::increase_height_and_wait_for_client(&regtest_manager, &client_2, 1)
             .await
             .unwrap();
+        let client_2_outputs = client_2.list_all_outputs().await;
+        dbg!(client_2_outputs.len());
+        let unspent_sapling_outs: Vec<AnyPoolOutput> = client_2_outputs
+            .iter()
+            .cloned()
+            .filter(OutputInterface::is_unspent)
+            .filter(|o| o.pool_type() == Shielded(Sapling))
+            .collect();
+        let unspent_orchard_outs: Vec<AnyPoolOutput> = client_2_outputs
+            .iter()
+            .cloned()
+            .filter(OutputInterface::is_unspent)
+            .filter(|o| o.pool_type() == Shielded(Orchard))
+            .collect();
+        let unspent_transparent_outs: Vec<AnyPoolOutput> = client_2_outputs
+            .iter()
+            .cloned()
+            .filter(OutputInterface::is_unspent)
+            .filter(|o| o.pool_type() == Transparent)
+            .collect();
+        assert_eq!(unspent_sapling_outs.len(), 3);
+        assert_eq!(unspent_transparent_outs.len(), 0);
+        assert_eq!(unspent_orchard_outs.len(), 0);
+        assert_eq!(unspent_sapling_outs.len(), client_2_outputs.len());
         // We know that the largest single note that 2 received from 1 was 3000, for 2 to send
         // 3000 back to 1 it will have to collect funds from two notes to pay the full 3000
         // plus the transaction fee.
@@ -2429,15 +2457,13 @@ mod slow {
             &client_2,
             vec![(
                 &get_base_address_macro!(faucet, "unified"),
-                30000,
+                30_000,
                 Some("Sending back, should have 2 inputs"),
             )],
         )
         .await
         .unwrap();
 
-        let client_2_outputs = client_2.list_all_outputs().await;
-        dbg!(client_2_outputs[0].clone());
         /*
         let notes_from_query = client_2
             .wallet
