@@ -2436,9 +2436,8 @@ mod slow {
         .await
         .unwrap();
 
-        let client_2_outputs = client_2
-            .list_all_requested_outputs(OutputSpendStatusQuery::any())
-            .await;
+        let client_2_outputs = client_2.list_all_outputs().await;
+        dbg!(client_2_outputs[0].clone());
         /*
         let notes_from_query = client_2
             .wallet
