@@ -2450,7 +2450,7 @@ mod slow {
         assert_eq!(unspent_transparent_outs.len(), 0);
         assert_eq!(unspent_orchard_outs.len(), 0);
         assert_eq!(unspent_sapling_outs.len(), client_2_outputs.len());
-        // We know that the largest single note that 2 received from 1 was 3000, for 2 to send
+        // We know that the largest single note that 2 received from 1 was 30_000, for 2 to send
         // 3000 back to 1 it will have to collect funds from two notes to pay the full 3000
         // plus the transaction fee.
         from_inputs::send(
@@ -2464,19 +2464,16 @@ mod slow {
         .await
         .unwrap();
 
+        let c2_pending_spent = client_2
+            .list_all_requested_outputs(OutputSpendStatusQuery::only_pending_spent())
+            .await;
+        let ps_note_1 = c2_pending_spent[0].clone();
+        let ps_note_2 = c2_pending_spent[1].clone();
+        assert_eq!(c2_pending_spent.len(), 2);
+        assert_eq!(ps_note_1.value(), 30_000);
+        assert_eq!(ps_note_2.value(), 20_000);
         /*
-        let notes_from_query = client_2
-            .wallet
-            .transaction_context
-            .transaction_metadata_set
-            .read()
-            .await
-            .transaction_records_by_id
-            .get_stipulated_noteids(OutputQuery {
-                spend_status: OutputSpendStatusQuery::only_pending_spent(),
-                pools: OutputPoolQuery::one_pool(PoolType::Shielded(Sapling)),
-            });
-        // The 3000 zat note to cover the value, plus another for the tx-fee.
+        // The 30_000 zat note to cover the value, plus another for the tx-fee.
         assert_eq!(
             notes_from_query.len(),
             client_2_outputs["pending_sapling_notes"].len()
