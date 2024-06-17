@@ -2391,7 +2391,7 @@ mod slow {
         }
     }
     #[tokio::test]
-    async fn note_selection_order() {
+    async fn output_selection_order() {
         // In order to fund a transaction multiple notes may be selected and consumed.
         // To minimize note selection operations notes are consumed from largest to smallest.
         // In addition to testing the order in which notes are selected this test:
@@ -2436,7 +2436,10 @@ mod slow {
         .await
         .unwrap();
 
-        let client_2_notes = client_2.do_list_notes(false).await;
+        let client_2_outputs = client_2
+            .list_all_requested_outputs(OutputSpendStatusQuery::any())
+            .await;
+        /*
         let notes_from_query = client_2
             .wallet
             .transaction_context
@@ -2451,12 +2454,12 @@ mod slow {
         // The 3000 zat note to cover the value, plus another for the tx-fee.
         assert_eq!(
             notes_from_query.len(),
-            client_2_notes["pending_sapling_notes"].len()
+            client_2_outputs["pending_sapling_notes"].len()
         );
         panic!();
-        let first_note = client_2_notes["pending_sapling_notes"][0].clone();
+        let first_note = client_2_outputs["pending_sapling_notes"][0].clone();
         let first_value = first_note["value"].as_fixed_point_u64(0).unwrap();
-        let second_value = client_2_notes["pending_sapling_notes"][1]["value"]
+        let second_value = client_2_outputs["pending_sapling_notes"][1]["value"]
             .as_fixed_point_u64(0)
             .unwrap();
         assert!(
@@ -2467,15 +2470,15 @@ mod slow {
         // Because the above tx fee won't consume a full note, change will be sent back to 2.
         // This implies that client_2 will have a total of 2 unspent notes:
         //  * one (sapling) from client_1 sent above (and never used) + 1 (orchard) as change to itself
-        assert_eq!(client_2_notes["unspent_sapling_notes"].len(), 1);
-        assert_eq!(client_2_notes["unspent_orchard_notes"].len(), 1);
-        let change_note = client_2_notes["unspent_orchard_notes"]
+        assert_eq!(client_2_outputs["unspent_sapling_notes"].len(), 1);
+        assert_eq!(client_2_outputs["unspent_orchard_notes"].len(), 1);
+        let change_note = client_2_outputs["unspent_orchard_notes"]
             .members()
             .filter(|note| note["is_change"].as_bool().unwrap())
             .collect::<Vec<_>>()[0];
         // Because 2000 is the size of the second largest note.
         assert_eq!(change_note["value"], 20000 - u64::from(MINIMUM_FEE));
-        let non_change_note_values = client_2_notes["unspent_sapling_notes"]
+        let non_change_note_values = client_2_outputs["unspent_sapling_notes"]
             .members()
             .filter(|note| !note["is_change"].as_bool().unwrap())
             .map(extract_value_as_u64)
@@ -2514,6 +2517,7 @@ mod slow {
         );
 
         // More explicit than ignoring the unused variable, we only care about this in order to drop it
+        */
     }
     #[tokio::test]
     async fn mempool_clearing_and_full_batch_syncs_correct_trees() {

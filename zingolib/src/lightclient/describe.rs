@@ -684,8 +684,11 @@ impl LightClient {
         )
     }
 
-    /// Get all outputs owned by the Capability
-    pub async fn list_all_outputs(&self) -> Vec<notes::AnyPoolOutput> {
+    /// Get outputs filtered by reeuested SpendStatus owned by the Capability
+    pub async fn list_all_requested_outputs(
+        &self,
+        request: OutputSpendStatusQuery,
+    ) -> Vec<notes::AnyPoolOutput> {
         self.wallet
             .transaction_context
             .transaction_metadata_set
@@ -693,30 +696,18 @@ impl LightClient {
             .await
             .transaction_records_by_id
             .values()
-            .flat_map(|record| {
-                notes::AnyPoolOutput::get_all_outputs_with_status(
-                    record,
-                    OutputSpendStatusQuery::any(),
-                )
-            })
+            .flat_map(|record| notes::AnyPoolOutput::get_all_outputs_with_status(record, request))
             .collect()
     }
-    /// Get all unspent outputs owned by the Capability
-    pub async fn list_all_unspent_outputs(&self) -> Vec<notes::AnyPoolOutput> {
-        self.wallet
-            .transaction_context
-            .transaction_metadata_set
-            .read()
+    /// Get all outputs owned by the Capability
+    pub async fn list_all_outputs(&self) -> Vec<notes::AnyPoolOutput> {
+        self.list_all_requested_outputs(OutputSpendStatusQuery::any())
             .await
-            .transaction_records_by_id
-            .values()
-            .flat_map(|record| {
-                notes::AnyPoolOutput::get_all_outputs_with_status(
-                    record,
-                    OutputSpendStatusQuery::only_unspent(),
-                )
-            })
-            .collect()
+    }
+    /// Get all **UNSPENT** outputs owned by the Capability
+    pub async fn list_all_unspent_outputs(&self) -> Vec<notes::AnyPoolOutput> {
+        self.list_all_requested_outputs(OutputSpendStatusQuery::only_unspent())
+            .await
     }
     /// Return a list of notes, if `all_notes` is false, then only return unspent notes
     ///  * TODO:  This fn does not handle failure it must be promoted to return a Result
