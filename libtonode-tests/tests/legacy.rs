@@ -45,10 +45,6 @@ use zingolib::{
     },
 };
 
-fn extract_value_as_u64(input: &JsonValue) -> u64 {
-    let note = &input["value"].as_fixed_point_u64(0).unwrap();
-    *note
-}
 fn check_expected_balance_with_fvks(
     fvks: &Vec<&Fvk>,
     balance: PoolBalances,
@@ -701,10 +697,7 @@ mod slow {
     use zcash_client_backend::{PoolType, ShieldedProtocol};
     use zcash_primitives::consensus::NetworkConstants;
     use zingo_testutils::lightclient::from_inputs;
-    use zingolib::wallet::notes::{
-        query::{OutputPoolQuery, OutputQuery, OutputSpendStatusQuery},
-        AnyPoolOutput, OutputInterface,
-    };
+    use zingolib::wallet::notes::{query::OutputSpendStatusQuery, AnyPoolOutput, OutputInterface};
 
     use super::*;
 
