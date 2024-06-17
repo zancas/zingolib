@@ -2470,29 +2470,19 @@ mod slow {
         let ps_note_1 = c2_pending_spent[0].clone();
         let ps_note_2 = c2_pending_spent[1].clone();
         assert_eq!(c2_pending_spent.len(), 2);
-        assert_eq!(ps_note_1.value(), 30_000);
-        assert_eq!(ps_note_2.value(), 20_000);
-        /*
-        // The 30_000 zat note to cover the value, plus another for the tx-fee.
-        assert_eq!(
-            notes_from_query.len(),
-            client_2_outputs["pending_sapling_notes"].len()
-        );
-        panic!();
-        let first_note = client_2_outputs["pending_sapling_notes"][0].clone();
-        let first_value = first_note["value"].as_fixed_point_u64(0).unwrap();
-        let second_value = client_2_outputs["pending_sapling_notes"][1]["value"]
-            .as_fixed_point_u64(0)
-            .unwrap();
         assert!(
-            first_value == 30000u64 && second_value == 20000u64
-                || first_value == 20000u64 && second_value == 30000u64
+            // Either order is valid
+            (ps_note_1.value() == 30_000 && ps_note_2.value() == 20_000)
+                || (ps_note_1.value() == 20_000 && ps_note_2.value() == 30_000)
         );
-        //);
         // Because the above tx fee won't consume a full note, change will be sent back to 2.
         // This implies that client_2 will have a total of 2 unspent notes:
-        //  * one (sapling) from client_1 sent above (and never used) + 1 (orchard) as change to itself
-        assert_eq!(client_2_outputs["unspent_sapling_notes"].len(), 1);
+        //  * one (sapling) from client_1 sent above (and never used) + 1 (sapling) as change to itself
+        let c2_unspent = client_2
+            .list_all_requested_outputs(OutputSpendStatusQuery::only_unspent())
+            .await;
+        assert_eq!(c2_unspent.len(), 2);
+        /*
         assert_eq!(client_2_outputs["unspent_orchard_notes"].len(), 1);
         let change_note = client_2_outputs["unspent_orchard_notes"]
             .members()
