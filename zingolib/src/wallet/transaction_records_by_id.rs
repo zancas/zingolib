@@ -1,7 +1,7 @@
 //! The lookup for transaction id indexed data.  Currently this provides the
 //! transaction record.
 
-use crate::error::{ZingoLibError, ZingoLibResult};
+
 use crate::wallet::notes::interface::OutputConstructor;
 use crate::wallet::{
     error::FeeError,
