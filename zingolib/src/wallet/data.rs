@@ -622,7 +622,7 @@ pub mod summaries {
     }
 
     /// TODO: Add Doc Comment Here!
-    #[derive(Clone, PartialEq, Eq, Debug)]
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     pub enum ValueTransferKind {
         /// TODO: Add Doc Comment Here!
         Sent,
