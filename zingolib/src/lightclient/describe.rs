@@ -283,7 +283,10 @@ impl LightClient {
         for tx in tx_summaries.iter() {
             match tx.kind {
                 TransactionKind::Received => todo!(),
-                TransactionKind::Sent(send_type) => todo!(),
+                TransactionKind::Sent(send_type) => match send_type {
+                    Send => todo!(),
+                    Shield => todo!(),
+                },
             }
 
         self.list_value_transfers_and_capture_errors().await.0
