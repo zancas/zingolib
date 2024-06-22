@@ -559,7 +559,7 @@ pub mod summaries {
             } else {
                 "not available".to_string()
             };
-            let recipient_address = if let Some(addr) = self.recipient_address {
+            let recipient_address = if let Some(addr) = self.recipient_address.clone() {
                 addr
             } else {
                 "not available".to_string()
@@ -621,16 +621,21 @@ pub mod summaries {
         }
     }
 
-    /// TODO: Add Doc Comment Here!
+    /// A set of outputs within a transaction that
+    /// are sent to the same address are grouped
+    /// into a "ValueTransfer". There are 4 variants
+    /// tracked here.
     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     pub enum ValueTransferKind {
-        /// TODO: Add Doc Comment Here!
+        /// The receiver is not controlled by the creating Capability (Creator)
         Sent,
-        /// TODO: Add Doc Comment Here!
+        /// The receiver is shielded, and controlled by the Creator
+        /// The whole transaction is created to shield.
         Shield,
-        /// TODO: Add Doc Comment Here!
+        /// The receiver is controlled by the Creator, the transaction
+        /// also has non-Creator receivers.
         NoteToSelf,
-        /// TODO: Add Doc Comment Here!
+        /// The Creator is not this Capability
         Received,
     }
 
