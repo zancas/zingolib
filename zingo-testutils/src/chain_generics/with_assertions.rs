@@ -14,7 +14,7 @@ use crate::{
 /// NOTICE this function bumps the chain and syncs the client
 /// only compatible with zip317
 /// returns the total fee for the transfer
-pub async fn propose_send_bump_sync_recipient<CC>(
+pub async fn send_values<CC>(
     environment: &mut CC,
     sender: &LightClient,
     sends: Vec<(&LightClient, PoolType, u64, Option<&str>)>,

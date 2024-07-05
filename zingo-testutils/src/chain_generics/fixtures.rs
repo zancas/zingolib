@@ -18,6 +18,15 @@ use crate::fee_tables;
 use crate::lightclient::from_inputs;
 use crate::lightclient::get_base_address;
 
+pub async fn insufficient_funds_are_correctly_calculated<CC>()
+where
+    CC: ConductChain,
+{
+    let mut environment = CC::setup().await;
+    let sender = environment.fund_client_orchard(250_000).await;
+    let recipient = environment.create_client().await;
+}
+
 /// Fixture for testing various vt transactions
 pub async fn create_various_value_transfers<CC>()
 where
@@ -31,7 +40,7 @@ where
     println!("client is ready to send");
 
     let recipient = environment.create_client().await;
-    let _recorded_fee = with_assertions::propose_send_bump_sync_recipient(
+    let _recorded_fee = with_assertions::send_values(
         &mut environment,
         &sender,
         vec![
@@ -116,7 +125,7 @@ where
 
     println!("recipient ready");
 
-    let recorded_fee = with_assertions::propose_send_bump_sync_recipient(
+    let recorded_fee = with_assertions::send_values(
         &mut environment,
         &sender,
         vec![(&recipient, pooltype, send_value, None)],
@@ -136,7 +145,7 @@ where
     let secondary = environment.create_client().await;
 
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &primary,
             vec![
@@ -162,7 +171,7 @@ where
 
     for _ in 0..n {
         assert_eq!(
-            with_assertions::propose_send_bump_sync_recipient(
+            with_assertions::send_values(
                 &mut environment,
                 &primary,
                 vec![
@@ -180,7 +189,7 @@ where
         );
 
         assert_eq!(
-            with_assertions::propose_send_bump_sync_recipient(
+            with_assertions::send_values(
                 &mut environment,
                 &secondary,
                 vec![(&primary, Shielded(Orchard), 50_000, None)],
@@ -201,7 +210,7 @@ where
     let secondary = environment.create_client().await;
 
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &primary,
             vec![
@@ -214,7 +223,7 @@ where
     );
 
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &secondary,
             vec![(&primary, Shielded(Orchard), 90_000, None)]
@@ -234,7 +243,7 @@ where
     let secondary = environment.create_client().await;
 
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &primary,
             vec![
@@ -247,7 +256,7 @@ where
     );
 
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &secondary,
             vec![(&primary, Shielded(Orchard), 30_000, None)]
@@ -278,7 +287,7 @@ where
 
     // send a bunch of dust
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &primary,
             vec![
@@ -300,7 +309,7 @@ where
 
     // combine the only valid sapling note with the only valid orchard note to send
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &secondary,
             vec![(&primary, Shielded(Orchard), 10_000, None),],
@@ -374,7 +383,7 @@ where
 
     // Send number_of_notes transfers in increasing 10_000 zat increments
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &primary,
             transaction_1_values
@@ -423,7 +432,7 @@ where
         * MARGINAL_FEE.into_u64();
     // the second client selects notes to cover the transaction.
     assert_eq!(
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &secondary,
             vec![(&primary, Shielded(Orchard), value_from_transaction_2, None)]
@@ -474,7 +483,7 @@ where
 
     let primary = environment.fund_client_orchard(1_000_000).await;
     let secondary = environment.create_client().await;
-    with_assertions::propose_send_bump_sync_recipient(
+    with_assertions::send_values(
         &mut environment,
         &primary,
         vec![(&secondary, Shielded(shpool), 100_000 + make_change, None)],
@@ -493,7 +502,7 @@ where
     // );
     assert_eq!(
         expected_fee,
-        with_assertions::propose_send_bump_sync_recipient(
+        with_assertions::send_values(
             &mut environment,
             &secondary,
             vec![(&tertiary, pool, 100_000 - expected_fee, None)],
