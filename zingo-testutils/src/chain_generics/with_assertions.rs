@@ -9,7 +9,7 @@ use crate::{
     lightclient::{from_inputs, get_base_address},
 };
 
-/// this version assumes a single recipient and measures that the recipient also recieved the expected balances
+/// this version has 1 receiver per send and measures that the recipient also recieved the expected balances
 /// test-only generic
 /// NOTICE this function bumps the chain and syncs the client
 /// only compatible with zip317
