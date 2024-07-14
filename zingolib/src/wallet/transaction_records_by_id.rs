@@ -502,7 +502,9 @@ impl TransactionRecordsById {
         value
     }
 
-    /// TODO: Add Doc Comment Here!
+    /// During the process of decrypting and transforming transactions
+    /// new taddr outputs are added to the zingolib internal representation
+    /// of a TransparentOutput
     #[allow(clippy::too_many_arguments)]
     pub fn add_new_taddr_output(
         &mut self,
