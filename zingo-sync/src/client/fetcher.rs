@@ -51,13 +51,6 @@ async fn queue_requests(
     requests: &mut UnboundedReceiver<FetchRequest>,
     fetch_request_queue: &mut Vec<FetchRequest>,
 ) -> bool {
-    // if there are no fetch requests to process, sleep until the next fetch request is received
-    // or channel is closed
-    if fetch_request_queue.is_empty() {
-        while let Some(fetch_request) = requests.recv().await {
-            fetch_request_queue.push(fetch_request);
-        }
-    }
     // receive all remaining fetch requests from channel
     // when channel is empty return `false` to continue fetching data from the server
     // when channel is closed and all fetch requests are processed, return `true`
