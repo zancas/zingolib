@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `lightclient::LightClient::do_list_transactions`
 - `wallet::keys::is_shielded_address`
+- `WalletCapability::get_taddr_to_secretkey_map` (since 2024-09-27)
 
 ### Added
 
