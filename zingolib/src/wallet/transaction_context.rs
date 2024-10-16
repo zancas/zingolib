@@ -166,7 +166,7 @@ mod decrypt_transaction {
                     .add_outgoing_metadata(&transaction.txid(), outgoing_metadatas);
             }
 
-            self.update_outgoing_txdatas_with_uas(txid_indexed_zingo_memos)
+            self.update_from_zingomemos(txid_indexed_zingo_memos)
                 .await
                 .expect("Zingo Memo data has been successfully applied without error.");
 
@@ -695,7 +695,7 @@ mod decrypt_transaction {
                 Ok(())
             }
 
-            pub(super) async fn update_outgoing_txdatas_with_uas(
+            pub(super) async fn update_from_zingomemos(
                 &self,
                 txid_indexed_zingo_memos: Vec<(ParsedMemo, TxId)>,
             ) -> Result<(), InvalidMemoError> {
