@@ -233,6 +233,7 @@ pub struct WalletCapability {
     /// unified_addresses field?
     transparent_child_addresses: Arc<append_only_vec::AppendOnlyVec<(usize, TransparentAddress)>>,
     // TODO: read/write for ephmereral addresses
+    // TODO: Remove this field and exclusively use the TxMap field instead
     transparent_child_ephemeral_addresses:
         Arc<AppendOnlyVec<(TransparentAddress, TransparentAddressMetadata)>>,
     /// Cache of unified_addresses

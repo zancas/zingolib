@@ -9,7 +9,7 @@ use zcash_primitives::{consensus::BlockHeight, transaction::TxId};
 
 use crate::wallet::{keys::unified::WalletCapability, tx_map::TxMap};
 
-/// TODO: Add Doc Comment Here!
+/// All the data you need to propose, build, and sign a transaction.
 #[derive(Clone)]
 pub struct TransactionContext {
     /// TODO: Add Doc Comment Here!
