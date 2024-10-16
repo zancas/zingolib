@@ -654,7 +654,7 @@ mod decrypt_transaction {
             }
             async fn handle_texes(
                 &self,
-                ephemeral_address_indexes: Vec<u32>,
+                zingo_memo_stored_indices: Vec<u32>,
             ) -> Result<(), InvalidMemoError> {
                 // Get list of ephemeral keys already registered to the capability.
                 // TODO:  This doesn't currently handle out-of-order sync where
@@ -662,7 +662,7 @@ mod decrypt_transaction {
                 // corresponding TEX address has been "passed".
                 let current_keys = self.key.transparent_child_ephemeral_addresses();
                 let total_keys = current_keys.len();
-                for ephemeral_address_index in ephemeral_address_indexes {
+                for ephemeral_address_index in zingo_memo_stored_indices {
                     if (ephemeral_address_index as usize) < total_keys {
                         // The emphemeral key is in the structure at its appropriate location.
                         return Ok(());
