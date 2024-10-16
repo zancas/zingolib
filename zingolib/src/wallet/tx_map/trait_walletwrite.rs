@@ -120,6 +120,7 @@ impl WalletWrite for TxMap {
         Self::Error,
     > {
         self.spending_data()
+            .as_ref()
             .map(|spending_data| {
                 iter::repeat_with(|| {
                     crate::wallet::data::new_persistant_ephemeral_address(

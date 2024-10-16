@@ -5,8 +5,9 @@
 
 use crate::{
     data::witness_trees::WitnessTrees,
-    wallet::transaction_records_by_id::{
-        trait_inputsource::InputSourceError, TransactionRecordsById,
+    wallet::{
+        error::KeyError,
+        transaction_records_by_id::{trait_inputsource::InputSourceError, TransactionRecordsById},
     },
 };
 use getset::{Getters, MutGetters};
@@ -105,7 +106,7 @@ impl TxMap {
             transaction_records_by_id: TransactionRecordsById::new(),
             spending_data: Some(SpendingData::new(
                 WitnessTrees::default(),
-                keys::AccountPubKey::deserialize(&EXTENDED_PUBKEY)
+                zcash_primitives::legacy::keys::AccountPubKey::deserialize(&EXTENDED_PUBKEY)
                     .unwrap()
                     .derive_ephemeral_ivk()
                     .unwrap(),
@@ -135,7 +136,7 @@ pub enum TxMapTraitError {
     #[error("{0:?}")]
     TransactionWrite(std::io::Error),
     #[error("{0}")]
-    TexSendError(String),
+    TexSendError(KeyError),
 }
 
 pub mod trait_stub_inputsource;
