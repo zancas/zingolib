@@ -124,7 +124,7 @@ impl WalletWrite for TxMap {
             .map(|spending_data| {
                 iter::repeat_with(|| {
                     crate::wallet::data::new_persistant_ephemeral_address(
-                        self.transparent_child_ephemeral_addresses.clone(),
+                        &self.transparent_child_ephemeral_addresses,
                         spending_data.transparent_ephemeral_ivk(),
                     )
                     .map_err(TxMapTraitError::TexSendError)

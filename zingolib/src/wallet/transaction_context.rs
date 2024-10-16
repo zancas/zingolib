@@ -609,12 +609,9 @@ mod decrypt_transaction {
         }
     }
     mod zingo_memos {
-        use zcash_client_backend::wallet::TransparentAddressMetadata;
+
         use zcash_keys::address::UnifiedAddress;
-        use zcash_primitives::{
-            legacy::keys::{NonHardenedChildIndex, TransparentKeyScope},
-            transaction::TxId,
-        };
+        use zcash_primitives::transaction::TxId;
         use zingo_memo::ParsedMemo;
 
         use crate::wallet::{
@@ -663,7 +660,7 @@ mod decrypt_transaction {
                 // TODO:  This doesn't currently handle out-of-order sync where
                 // the ephemeral address is discovered (from the memo) **after** the
                 // corresponding TEX address has been "passed".
-                let current_keys = &mut self.key.transparent_child_ephemeral_addresses();
+                let current_keys = self.key.transparent_child_ephemeral_addresses();
                 let total_keys = current_keys.len();
                 for ephemeral_address_index in ephemeral_address_indexes {
                     if (ephemeral_address_index as usize) < total_keys {
@@ -672,17 +669,15 @@ mod decrypt_transaction {
                     } else {
                         // The detected key is derived from a higher index than any previously stored key.
                         //  * generate the keys to fill in the "gap".
-                        for index in (total_keys as u32)..=ephemeral_address_index {
-                            let (ephemeral_address, metadata) =
-                                crate::wallet::keys::unified::WalletCapability::ephemeral_address(
-                                    &self
-                                        .key
-                                        .ephemeral_ivk()
-                                        .map_err(InvalidMemoError::InvalidEphemeralIndex)?,
-                                    index,
-                                )
-                                .map_err(InvalidMemoError::InvalidEphemeralIndex)?;
-                            current_keys.push((ephemeral_address, metadata));
+                        for _index in (total_keys as u32)..=ephemeral_address_index {
+                            crate::wallet::data::new_persistant_ephemeral_address(
+                                &current_keys,
+                                &self
+                                    .key
+                                    .ephemeral_ivk()
+                                    .map_err(InvalidMemoError::InvalidEphemeralIndex)?,
+                            )
+                            .map_err(InvalidMemoError::InvalidEphemeralIndex)?;
                         }
                     }
                 }

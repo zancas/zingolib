@@ -9,8 +9,8 @@ use incrementalmerkletree::{Hashable, Position};
 use json::JsonValue;
 use prost::Message;
 
+use std::convert::TryFrom;
 use std::io::{self, Read, Write};
-use std::{convert::TryFrom, sync::Arc};
 use zcash_client_backend::{
     proto::compact_formats::CompactBlock, wallet::TransparentAddressMetadata,
 };
@@ -2012,9 +2012,11 @@ fn read_write_empty_sapling_tree() {
 /// Generate a new ephemeral transparent address,
 /// for use in a send to a TEX address.
 pub fn new_persistant_ephemeral_address(
-    transparent_child_ephemeral_addresses: Arc<
-        append_only_vec::AppendOnlyVec<(TransparentAddress, TransparentAddressMetadata)>,
-    >,
+    transparent_child_ephemeral_addresses: &append_only_vec::AppendOnlyVec<(
+        TransparentAddress,
+        TransparentAddressMetadata,
+    )>,
+
     transparent_ephemeral_ivk: &zcash_primitives::legacy::keys::EphemeralIvk,
 ) -> Result<
     (
