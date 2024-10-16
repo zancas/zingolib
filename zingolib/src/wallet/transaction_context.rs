@@ -659,36 +659,27 @@ mod decrypt_transaction {
                 &self,
                 ephemeral_address_indexes: Vec<u32>,
             ) -> Result<(), InvalidMemoError> {
+                // Get list of ephemeral keys already registered to the capability.
+                let current_keys = &mut self.key.transparent_child_ephemeral_addresses();
+                let total_keys = current_keys.len();
                 for ephemeral_address_index in ephemeral_address_indexes {
-                    let (ephemeral_address, _metadata) =
-                        crate::wallet::keys::unified::WalletCapability::ephemeral_address(
-                            &self
-                                .key
-                                .ephemeral_ivk()
-                                .map_err(InvalidMemoError::InvalidEphemeralIndex)?,
-                            ephemeral_address_index,
-                        )
-                        .map_err(InvalidMemoError::InvalidEphemeralIndex)?;
-                    let current_keys = &mut self.key.transparent_child_ephemeral_addresses();
-                    let total_keys = current_keys.len();
                     if (ephemeral_address_index as usize) < total_keys {
-                        if current_keys[ephemeral_address_index as usize].0 != ephemeral_address {
-                            panic!("Something is badly broken.  It should not be possible to populate this structure with an incorrect key.")
-                        } else {
-                            // The emphemeral key is in the structure at its appropriate location.
-                            return Ok(());
-                        }
+                        // The emphemeral key is in the structure at its appropriate location.
+                        return Ok(());
                     } else {
                         // The detected key is derived from a higher index than any previously stored key.
                         //  * generate the keys to fill in the "gap".
-                        for i in (total_keys as u32)..=ephemeral_address_index {
-                            if let Some(nhci) = NonHardenedChildIndex::from_index(i) {
-                                let tam = TransparentAddressMetadata::new(
-                                    TransparentKeyScope::EPHEMERAL,
-                                    nhci,
-                                );
-                                current_keys.push((ephemeral_address, tam));
-                            }
+                        for index in (total_keys as u32)..=ephemeral_address_index {
+                            let (ephemeral_address, metadata) =
+                                crate::wallet::keys::unified::WalletCapability::ephemeral_address(
+                                    &self
+                                        .key
+                                        .ephemeral_ivk()
+                                        .map_err(InvalidMemoError::InvalidEphemeralIndex)?,
+                                    index,
+                                )
+                                .map_err(InvalidMemoError::InvalidEphemeralIndex)?;
+                            current_keys.push((ephemeral_address, metadata));
                         }
                     }
                 }
