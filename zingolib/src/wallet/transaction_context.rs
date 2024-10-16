@@ -660,6 +660,9 @@ mod decrypt_transaction {
                 ephemeral_address_indexes: Vec<u32>,
             ) -> Result<(), InvalidMemoError> {
                 // Get list of ephemeral keys already registered to the capability.
+                // TODO:  This doesn't currently handle out-of-order sync where
+                // the ephemeral address is discovered (from the memo) **after** the
+                // corresponding TEX address has been "passed".
                 let current_keys = &mut self.key.transparent_child_ephemeral_addresses();
                 let total_keys = current_keys.len();
                 for ephemeral_address_index in ephemeral_address_indexes {
