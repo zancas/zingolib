@@ -14,10 +14,7 @@ use spending_data::SpendingData;
 use std::{fmt::Debug, sync::Arc};
 use thiserror::Error;
 use zcash_client_backend::wallet::TransparentAddressMetadata;
-use zcash_primitives::legacy::{
-    keys::{self, EphemeralIvk},
-    TransparentAddress,
-};
+use zcash_primitives::legacy::{keys::EphemeralIvk, TransparentAddress};
 
 /// HashMap of all transactions in a wallet, keyed by txid.
 /// Note that the parent is expected to hold a RwLock, so we will assume that all accesses to
@@ -89,45 +86,6 @@ impl TxMap {
     pub fn clear(&mut self) {
         self.transaction_records_by_id.clear();
         self.witness_trees_mut().map(WitnessTrees::clear);
-    }
-    /// Generate a new ephemeral transparent address,
-    /// for use in a send to a TEX address.
-    pub fn new_ephemeral_address(
-        &self,
-    ) -> Result<
-        (
-            zcash_primitives::legacy::TransparentAddress,
-            zcash_client_backend::wallet::TransparentAddressMetadata,
-        ),
-        String,
-    > {
-        let child_index = keys::NonHardenedChildIndex::from_index(
-            self.transparent_child_ephemeral_addresses.len() as u32,
-        )
-        .ok_or_else(|| String::from("Ephemeral index overflow"))?;
-        let t_addr = self
-            .spending_data()
-            .as_ref()
-            .ok_or_else(|| String::from("Ephemeral addresses are only generated at spend time"))?
-            .transparent_ephemeral_ivk()
-            .derive_ephemeral_address(child_index)
-            .map_err(|e| e.to_string())?;
-        self.transparent_child_ephemeral_addresses.push((
-            t_addr,
-            TransparentAddressMetadata::new(
-                keys::TransparentKeyScope::EPHEMERAL,
-                keys::NonHardenedChildIndex::from_index(
-                    self.transparent_child_ephemeral_addresses.len() as u32,
-                )
-                .expect("ephemeral index overflow"),
-            ),
-        ));
-        Ok(self
-            .transparent_child_ephemeral_addresses
-            .iter()
-            .last()
-            .expect("we just generated an address, this is known to be non-empty")
-            .clone())
     }
 }
 #[cfg(test)]

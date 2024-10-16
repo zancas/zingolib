@@ -612,10 +612,7 @@ mod decrypt_transaction {
         use zcash_client_backend::wallet::TransparentAddressMetadata;
         use zcash_keys::address::UnifiedAddress;
         use zcash_primitives::{
-            legacy::{
-                keys::{NonHardenedChildIndex, TransparentKeyScope},
-                TransparentAddress,
-            },
+            legacy::keys::{NonHardenedChildIndex, TransparentKeyScope},
             transaction::TxId,
         };
         use zingo_memo::ParsedMemo;
@@ -663,9 +660,14 @@ mod decrypt_transaction {
                 ephemeral_address_indexes: Vec<u32>,
             ) -> Result<(), InvalidMemoError> {
                 for ephemeral_address_index in ephemeral_address_indexes {
-                    let ephemeral_address = self
-                        .key
-                        .ephemeral_address(ephemeral_address_index)
+                    let (ephemeral_address, _metadata) =
+                        crate::wallet::keys::unified::WalletCapability::ephemeral_address(
+                            &self
+                                .key
+                                .ephemeral_ivk()
+                                .map_err(InvalidMemoError::InvalidEphemeralIndex)?,
+                            ephemeral_address_index,
+                        )
                         .map_err(InvalidMemoError::InvalidEphemeralIndex)?;
                     let current_keys = &mut self.key.transparent_child_ephemeral_addresses();
                     let total_keys = current_keys.len();

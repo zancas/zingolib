@@ -32,9 +32,12 @@ use zcash_primitives::legacy::{
 };
 use zcash_primitives::zip32::{AccountId, DiversifierIndex};
 
-use crate::config::{ChainType, ZingoConfig};
 use crate::wallet::error::KeyError;
 use crate::wallet::traits::{DomainWalletExt, ReadableWriteable, Recipient};
+use crate::{
+    config::{ChainType, ZingoConfig},
+    wallet::data::new_persistant_ephemeral_address,
+};
 
 use super::legacy::{generate_transparent_address_from_legacy_key, legacy_sks_to_usk, Capability};
 use super::ToBase58Check;
@@ -775,8 +778,12 @@ impl ReadableWriteable<ChainType, ChainType> for WalletCapability {
         }
 
         for _ in 0..ephemeral_addresses_len {
-            wc.new_ephemeral_address()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            new_persistant_ephemeral_address(
+                wc.transparent_child_ephemeral_addresses.clone(),
+                &wc.ephemeral_ivk()
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            )
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         }
 
         Ok(wc)
@@ -898,7 +905,7 @@ mod ephemeral {
     use zcash_client_backend::wallet::TransparentAddressMetadata;
     use zcash_keys::keys::DerivationError;
     use zcash_primitives::legacy::{
-        keys::{AccountPubKey, NonHardenedChildIndex},
+        keys::{AccountPubKey, NonHardenedChildIndex, TransparentKeyScope},
         TransparentAddress,
     };
 
@@ -916,16 +923,18 @@ mod ephemeral {
                 .map_err(KeyError::KeyDerivationError)
         }
         pub(crate) fn ephemeral_address(
-            &self,
+            ephemeral_ivk: &zcash_primitives::legacy::keys::EphemeralIvk,
             ephemeral_address_index: u32,
-        ) -> Result<TransparentAddress, KeyError> {
-            let eph_ivk = self.ephemeral_ivk()?;
+        ) -> Result<(TransparentAddress, TransparentAddressMetadata), KeyError> {
             let address_index = NonHardenedChildIndex::from_index(ephemeral_address_index)
                 .ok_or(KeyError::InvalidNonHardenedChildIndex)?;
-            eph_ivk
-                .derive_ephemeral_address(address_index)
-                .map_err(DerivationError::Transparent)
-                .map_err(KeyError::KeyDerivationError)
+            Ok((
+                ephemeral_ivk
+                    .derive_ephemeral_address(address_index)
+                    .map_err(DerivationError::Transparent)
+                    .map_err(KeyError::KeyDerivationError)?,
+                TransparentAddressMetadata::new(TransparentKeyScope::EPHEMERAL, address_index),
+            ))
         }
         /// TODO: Add Doc Comment Here!
         pub fn transparent_child_ephemeral_addresses(
