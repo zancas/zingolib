@@ -115,48 +115,21 @@ mod decrypt_transaction {
             let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
 
             let mut outgoing_metadatas = vec![];
+            let mut total_transparent_value_spent = 0;
 
             // Execute scanning operations
             self.decrypt_transaction_to_record(
                 transaction,
                 status,
                 block_time,
+                &mut total_transparent_value_spent,
                 &mut outgoing_metadatas,
                 &mut txid_indexed_zingo_memos,
             )
             .await;
 
             // Post process scan results
-            {
-                let tx_map = self.transaction_metadata_set.write().await;
-                if let Some(transaction_record) =
-                    tx_map.transaction_records_by_id.get(&transaction.txid())
-                {
-                    // `transaction_kind` uses outgoing_tx_data to determine the SendType but not to distinguish Sent(_) from Received
-                    // therefore, its safe to use it here to establish whether the transaction was created by this capacility or not.
-                    if let TransactionKind::Sent(_) = tx_map
-                        .transaction_records_by_id
-                        .transaction_kind(transaction_record, &self.config.chain)
-                    {
-                        if let Some(t_bundle) = transaction.transparent_bundle() {
-                            for vout in &t_bundle.vout {
-                                if let Some(taddr) = vout.recipient_address().map(|raw_taddr| {
-                                    address_from_pubkeyhash(&self.config, raw_taddr)
-                                }) {
-                                    if !taddrs_set.contains(&taddr) {
-                                        outgoing_metadatas.push(OutgoingTxData {
-                                            recipient_address: taddr,
-                                            value: u64::from(vout.value),
-                                            memo: Memo::Empty,
-                                            recipient_ua: None,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            self.post_process_scan_results();
 
             if !outgoing_metadatas.is_empty() {
                 self.transaction_metadata_set
@@ -179,19 +152,26 @@ mod decrypt_transaction {
                     .set_price(&transaction.txid(), price);
             }
         }
+
         #[allow(clippy::too_many_arguments)]
         async fn decrypt_transaction_to_record(
             &self,
             transaction: &Transaction,
             status: ConfirmationStatus,
             block_time: Option<u32>,
+            total_transparent_value_spent: &mut u64,
             outgoing_metadatas: &mut Vec<OutgoingTxData>,
             arbitrary_memos_with_txids: &mut Vec<(ParsedMemo, TxId)>,
         ) {
             //todo: investigate scanning all bundles simultaneously
 
-            self.decrypt_transaction_to_record_transparent(transaction, status, block_time)
-                .await;
+            self.decrypt_transaction_to_record_transparent(
+                transaction,
+                status,
+                block_time,
+                total_transparent_value_spent,
+            )
+            .await;
             self.decrypt_transaction_to_record_sapling(
                 transaction,
                 status,
@@ -215,13 +195,19 @@ mod decrypt_transaction {
             transaction: &Transaction,
             status: ConfirmationStatus,
             block_time: Option<u32>,
+            total_transparent_value_spent: &mut u64,
         ) {
             // Scan all transparent outputs to see if we received any money
             self.account_for_transparent_receipts(transaction, status, block_time)
                 .await;
             // Scan transparent spends
-            self.account_for_transparent_spending(transaction, status, block_time)
-                .await;
+            self.account_for_transparent_spending(
+                transaction,
+                status,
+                block_time,
+                total_transparent_value_spent,
+            )
+            .await;
         }
 
         /// A receipt of funds has been detected at a ZIP320 "ephemeral" return
@@ -288,9 +274,9 @@ mod decrypt_transaction {
             transaction: &Transaction,
             status: ConfirmationStatus,
             block_time: Option<u32>,
+            total_transparent_value_spent: &mut u64,
         ) {
             // Scan all the inputs to see if we spent any transparent funds in this tx
-            let mut total_transparent_value_spent = 0;
             let mut spent_utxos = vec![];
 
             {
@@ -314,7 +300,7 @@ mod decrypt_transaction {
                                 .iter()
                                 .find(|u| u.txid == prev_transaction_id && u.output_index == prev_n)
                             {
-                                total_transparent_value_spent += spent_utxo.value;
+                                *total_transparent_value_spent += spent_utxo.value;
                                 spent_utxos.push((
                                     prev_transaction_id,
                                     prev_n as u32,
@@ -336,7 +322,7 @@ mod decrypt_transaction {
             }
 
             // If this transaction spent value, add the spent amount to the TxID
-            if total_transparent_value_spent > 0 {
+            if *total_transparent_value_spent > 0 {
                 self.transaction_metadata_set
                     .write()
                     .await
@@ -345,7 +331,7 @@ mod decrypt_transaction {
                         transaction.txid(),
                         status,
                         block_time,
-                        total_transparent_value_spent,
+                        *total_transparent_value_spent,
                     );
             }
         }
@@ -605,6 +591,39 @@ mod decrypt_transaction {
                         None => None,
                     },
                 );
+            }
+            async fn post_process_scan_results(&self, transaction: &Transaction) {
+                let tx_map = self.transaction_metadata_set.write().await;
+                if let Some(transaction_record) =
+                    tx_map.transaction_records_by_id.get(&transaction.txid())
+                {
+                    // `transaction_kind` uses outgoing_tx_data to determine the SendType but not to distinguish Sent(_) from Received
+                    // therefore, its safe to use it here to establish whether the transaction was created by this capacility or not.
+                    if let TransactionKind::Sent(_) = tx_map
+                        .transaction_records_by_id
+                        .transaction_kind(transaction_record, &self.config.chain)
+                    {
+                        if let Some(t_bundle) = transaction.transparent_bundle() {
+                            for vout in &t_bundle.vout {
+                                if let Some(taddr) = vout.recipient_address().map(|raw_taddr| {
+                                    match total_transparent_value_spent {
+                                        0 => address_from_pubkeyhash(&self.config, raw_taddr),
+                                        _nonzero => todo!("texify"),
+                                    }
+                                }) {
+                                    if !taddrs_set.contains(&taddr) {
+                                        outgoing_metadatas.push(OutgoingTxData {
+                                            recipient_address: taddr,
+                                            value: u64::from(vout.value),
+                                            memo: Memo::Empty,
+                                            recipient_ua: None,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
