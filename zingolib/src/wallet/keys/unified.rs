@@ -560,7 +560,7 @@ impl WalletCapability {
     /// external here refers to HD keys:
     /// <https://zips.z.cash/zip-0032>
     /// where external and internal were inherited from the BIP44 conventions
-    pub(crate) fn get_external_taddrs(&self, chain: &crate::config::ChainType) -> HashSet<String> {
+    fn get_external_taddrs(&self, chain: &crate::config::ChainType) -> HashSet<String> {
         self.unified_addresses
             .iter()
             .filter_map(|address| {
@@ -581,7 +581,7 @@ impl WalletCapability {
             .collect()
     }
 
-    pub(crate) fn get_ephemeral_taddrs(&self, chain: &crate::config::ChainType) -> HashSet<String> {
+    fn get_ephemeral_taddrs(&self, chain: &crate::config::ChainType) -> HashSet<String> {
         self.transparent_child_ephemeral_addresses
             .iter()
             .map(|(transparent_address, _metadata)| transparent_address.encode(chain))

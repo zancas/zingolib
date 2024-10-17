@@ -249,14 +249,11 @@ mod decrypt_transaction {
         ) {
             if let Some(t_bundle) = transaction.transparent_bundle() {
                 // Collect our t-addresses for easy checking
-                let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
-                let ephemeral_taddrs = self.key.get_ephemeral_taddrs(&self.config.chain);
+                let taddrs_set = self.key.get_taddrs(&self.config.chain);
                 for (n, vout) in t_bundle.vout.iter().enumerate() {
                     if let Some(taddr) = vout.recipient_address() {
                         let output_taddr = address_from_pubkeyhash(&self.config, taddr);
-                        if taddrs_set.contains(&output_taddr)
-                            || ephemeral_taddrs.contains(&output_taddr)
-                        {
+                        if taddrs_set.contains(&output_taddr) {
                             self.record_taddr_receipt(
                                 transaction,
                                 status,
@@ -604,7 +601,7 @@ mod decrypt_transaction {
         ) {
             // TODO: Account for ephemeral_taddresses
             // Collect our t-addresses for easy checking
-            let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
+            let taddrs_set = self.key.get_taddrs(&self.config.chain);
             let tx_map = self.transaction_metadata_set.write().await;
             if let Some(transaction_record) =
                 tx_map.transaction_records_by_id.get(&transaction.txid())
