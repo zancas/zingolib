@@ -305,11 +305,11 @@ mod decrypt_transaction {
                         let prev_transaction_id = TxId::from_bytes(*vin.prevout.hash());
                         let prev_n = vin.prevout.n() as u64;
 
-                        if let Some(wtx) =
+                        if let Some(prev_tx_record) =
                             current_transaction_records_by_id.get(&prev_transaction_id)
                         {
                             // One of the tx outputs is a match
-                            if let Some(spent_utxo) = wtx
+                            if let Some(spent_utxo) = prev_tx_record
                                 .transparent_outputs
                                 .iter()
                                 .find(|u| u.txid == prev_transaction_id && u.output_index == prev_n)
