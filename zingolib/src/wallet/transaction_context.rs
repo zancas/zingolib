@@ -126,7 +126,12 @@ mod decrypt_transaction {
             .await;
 
             // Post process scan results
-            self.post_process_scan_results(&transaction, &mut outgoing_metadatas);
+            self.post_process_scan_results(
+                &transaction,
+                &mut outgoing_metadatas,
+                &mut total_transparent_value_spent,
+            )
+            .await;
 
             if !outgoing_metadatas.is_empty() {
                 self.transaction_metadata_set
@@ -612,7 +617,7 @@ mod decrypt_transaction {
                     if let Some(t_bundle) = transaction.transparent_bundle() {
                         for vout in &t_bundle.vout {
                             if let Some(taddr) = vout.recipient_address().map(|raw_taddr| {
-                                match total_transparent_value_spent {
+                                match total_transparent_value_spent.clone() {
                                     0 => address_from_pubkeyhash(&self.config, raw_taddr),
                                     _nonzero => todo!("texify"),
                                 }
