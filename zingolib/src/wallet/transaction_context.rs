@@ -111,9 +111,6 @@ mod decrypt_transaction {
             // Set up data structures to record scan results
             let mut txid_indexed_zingo_memos = Vec::new();
 
-            // Collect our t-addresses for easy checking
-            let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
-
             let mut outgoing_metadatas = vec![];
             let mut total_transparent_value_spent = 0;
 
@@ -129,7 +126,7 @@ mod decrypt_transaction {
             .await;
 
             // Post process scan results
-            self.post_process_scan_results();
+            self.post_process_scan_results(&transaction, &mut outgoing_metadatas);
 
             if !outgoing_metadatas.is_empty() {
                 self.transaction_metadata_set
@@ -592,33 +589,41 @@ mod decrypt_transaction {
                     },
                 );
             }
-            async fn post_process_scan_results(&self, transaction: &Transaction) {
-                let tx_map = self.transaction_metadata_set.write().await;
-                if let Some(transaction_record) =
-                    tx_map.transaction_records_by_id.get(&transaction.txid())
+        }
+
+        async fn post_process_scan_results(
+            &self,
+            transaction: &Transaction,
+            outgoing_metadatas: &mut Vec<OutgoingTxData>,
+            total_transparent_value_spent: &mut u64,
+        ) {
+            // Collect our t-addresses for easy checking
+            let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
+            let tx_map = self.transaction_metadata_set.write().await;
+            if let Some(transaction_record) =
+                tx_map.transaction_records_by_id.get(&transaction.txid())
+            {
+                // `transaction_kind` uses outgoing_tx_data to determine the SendType but not to distinguish Sent(_) from Received
+                // therefore, its safe to use it here to establish whether the transaction was created by this capacility or not.
+                if let TransactionKind::Sent(_) = tx_map
+                    .transaction_records_by_id
+                    .transaction_kind(transaction_record, &self.config.chain)
                 {
-                    // `transaction_kind` uses outgoing_tx_data to determine the SendType but not to distinguish Sent(_) from Received
-                    // therefore, its safe to use it here to establish whether the transaction was created by this capacility or not.
-                    if let TransactionKind::Sent(_) = tx_map
-                        .transaction_records_by_id
-                        .transaction_kind(transaction_record, &self.config.chain)
-                    {
-                        if let Some(t_bundle) = transaction.transparent_bundle() {
-                            for vout in &t_bundle.vout {
-                                if let Some(taddr) = vout.recipient_address().map(|raw_taddr| {
-                                    match total_transparent_value_spent {
-                                        0 => address_from_pubkeyhash(&self.config, raw_taddr),
-                                        _nonzero => todo!("texify"),
-                                    }
-                                }) {
-                                    if !taddrs_set.contains(&taddr) {
-                                        outgoing_metadatas.push(OutgoingTxData {
-                                            recipient_address: taddr,
-                                            value: u64::from(vout.value),
-                                            memo: Memo::Empty,
-                                            recipient_ua: None,
-                                        });
-                                    }
+                    if let Some(t_bundle) = transaction.transparent_bundle() {
+                        for vout in &t_bundle.vout {
+                            if let Some(taddr) = vout.recipient_address().map(|raw_taddr| {
+                                match total_transparent_value_spent {
+                                    0 => address_from_pubkeyhash(&self.config, raw_taddr),
+                                    _nonzero => todo!("texify"),
+                                }
+                            }) {
+                                if !taddrs_set.contains(&taddr) {
+                                    outgoing_metadatas.push(OutgoingTxData {
+                                        recipient_address: taddr,
+                                        value: u64::from(vout.value),
+                                        memo: Memo::Empty,
+                                        recipient_ua: None,
+                                    });
                                 }
                             }
                         }
