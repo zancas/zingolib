@@ -50,7 +50,7 @@ impl LightWallet {
     /// select anchors, based on the current synchronised block chain.
     pub(crate) async fn get_target_height_and_anchor_offset(&self) -> Option<(u32, usize)> {
         let range = {
-            let blocks = self.blocks.read().await;
+            let blocks = self.last_100_blocks.read().await;
             (
                 blocks.last().map(|block| block.height as u32),
                 blocks.first().map(|block| block.height as u32),
