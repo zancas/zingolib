@@ -129,7 +129,7 @@ mod decrypt_transaction {
             self.post_process_scan_results(
                 &transaction,
                 &mut outgoing_metadatas,
-                &mut total_transparent_value_spent,
+                total_transparent_value_spent,
             )
             .await;
 
@@ -600,7 +600,7 @@ mod decrypt_transaction {
             &self,
             transaction: &Transaction,
             outgoing_metadatas: &mut Vec<OutgoingTxData>,
-            total_transparent_value_spent: &mut u64,
+            total_transparent_value_spent: u64,
         ) {
             // Collect our t-addresses for easy checking
             let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
