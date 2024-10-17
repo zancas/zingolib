@@ -125,6 +125,10 @@ mod decrypt_transaction {
             )
             .await;
 
+            self.update_from_zingomemos(txid_indexed_zingo_memos)
+                .await
+                .expect("Zingo Memo data has been successfully applied without error.");
+
             // Post process scan results
             self.post_process_scan_results(
                 &transaction,
@@ -140,11 +144,6 @@ mod decrypt_transaction {
                     .transaction_records_by_id
                     .add_outgoing_metadata(&transaction.txid(), outgoing_metadatas);
             }
-
-            self.update_from_zingomemos(txid_indexed_zingo_memos)
-                .await
-                .expect("Zingo Memo data has been successfully applied without error.");
-
             // Update price if available
             if price.is_some() {
                 self.transaction_metadata_set
