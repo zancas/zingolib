@@ -602,6 +602,7 @@ mod decrypt_transaction {
             outgoing_metadatas: &mut Vec<OutgoingTxData>,
             total_transparent_value_spent: u64,
         ) {
+            // TODO: Account for ephemeral_taddresses
             // Collect our t-addresses for easy checking
             let taddrs_set = self.key.get_external_taddrs(&self.config.chain);
             let tx_map = self.transaction_metadata_set.write().await;

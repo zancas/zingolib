@@ -588,6 +588,12 @@ impl WalletCapability {
             .collect()
     }
 
+    pub(crate) fn get_taddrs(&self, chain: &crate::config::ChainType) -> HashSet<String> {
+        self.get_external_taddrs(chain)
+            .union(&self.get_ephemeral_taddrs(chain))
+            .cloned()
+            .collect()
+    }
     /// TODO: Add Doc Comment Here!
     pub fn first_sapling_address(&self) -> sapling_crypto::PaymentAddress {
         // This index is dangerous, but all ways to instantiate a UnifiedSpendAuthority
