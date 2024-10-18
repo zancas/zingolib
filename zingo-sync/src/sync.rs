@@ -4,8 +4,8 @@ use std::cmp;
 use std::ops::Range;
 use std::time::Duration;
 
+use crate::client::get_chain_height;
 use crate::client::FetchRequest;
-use crate::client::{fetch::fetch, get_chain_height};
 use crate::primitives::SyncState;
 use crate::scan::workers::{ScanTask, Scanner};
 use crate::scan::ScanResults;
@@ -21,6 +21,7 @@ use zcash_primitives::consensus::{BlockHeight, NetworkUpgrade, Parameters};
 use futures::future::try_join_all;
 use tokio::sync::mpsc;
 
+pub(crate) mod fetch;
 const BATCH_SIZE: u32 = 10;
 // const BATCH_SIZE: u32 = 1_000;
 
@@ -40,7 +41,11 @@ where
 
     // create channel for sending fetch requests and launch fetcher task
     let (fetch_request_sender, fetch_request_receiver) = mpsc::unbounded_channel();
-    let fetcher_handle = tokio::spawn(fetch(fetch_request_receiver, client, parameters.clone()));
+    let fetcher_handle = tokio::spawn(fetch::fetch(
+        fetch_request_receiver,
+        client,
+        parameters.clone(),
+    ));
     handles.push(fetcher_handle);
 
     update_scan_ranges(

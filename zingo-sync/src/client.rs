@@ -16,8 +16,6 @@ use zcash_primitives::{
     transaction::{Transaction, TxId},
 };
 
-pub mod fetch;
-
 /// Fetch requests are created and sent to the [`crate::client::fetch::fetch`] task when a connection to the server is required.
 ///
 /// Each variant includes a [`tokio::sync::oneshot::Sender`] for returning the fetched data to the requester.
