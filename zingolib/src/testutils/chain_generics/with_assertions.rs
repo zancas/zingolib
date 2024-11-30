@@ -76,6 +76,17 @@ where
         .as_ref()
         .expect("record is ok");
 
+    /* The following debug causes a clippy error:
+    https://rust-lang.github.io/rust-clippy/master/index.html#await_holding_lock
+        dbg!(
+            crate::grpc_connector::get_latest_block(
+                sender.config.lightwalletd_uri.read().unwrap().to_owned()
+            )
+            .await
+            .unwrap()
+            .height
+        );
+    */
     lookup_statuses(sender, txids.clone()).await.map(|status| {
         assert_eq!(
             status,
