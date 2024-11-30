@@ -212,7 +212,7 @@ mod fast {
 
         let no_messages = &recipient.messages_containing(None).await;
 
-        assert_eq!(no_messages.0.len(), 0);
+        assert_eq!(no_messages.len(), 0);
 
         from_inputs::quick_send(
             &faucet,
