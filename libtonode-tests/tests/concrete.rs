@@ -165,8 +165,6 @@ mod fast {
 
         let value_transfers = &recipient.sorted_value_transfers(true).await;
 
-        dbg!(value_transfers);
-
         assert!(value_transfers.iter().any(|vt| vt.kind()
             == ValueTransferKind::Sent(SentValueTransfer::SendToSelf(
                 SelfSendValueTransfer::Basic
