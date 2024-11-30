@@ -252,8 +252,11 @@ mod fast {
     ///
     /// After the messages are sent, the test checks that the `messages_containing` method
     /// returns the expected messages for each party in the correct order.
+    ///  NOTE:  This test is explicitly spoofing inauthentic addresses since Bob and Charlie are
+    ///  actually the same recipient faucet!!
     #[tokio::test]
     async fn message_thread() {
+        // Begin test setup
         let (regtest_manager, _cph, faucet, recipient, _txid) =
             scenarios::orchard_funded_recipient(10_000_000).await;
 
@@ -356,60 +359,60 @@ mod fast {
         )
         .unwrap()])
         .unwrap();
+        // Complete test setup
 
+        // Message One, Alice to Bob
         recipient.propose_send(alice_to_bob.clone()).await.unwrap();
-
         recipient
             .complete_and_broadcast_stored_proposal()
             .await
             .unwrap();
-
         increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
 
+        // Message Two, Alice to Bob
         recipient
             .propose_send(alice_to_bob_2.clone())
             .await
             .unwrap();
-
         recipient
             .complete_and_broadcast_stored_proposal()
             .await
             .unwrap();
-
         increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
 
+        // Message Three, Bob to Alice
         faucet.propose_send(bob_to_alice.clone()).await.unwrap();
-
         faucet
             .complete_and_broadcast_stored_proposal()
             .await
             .unwrap();
-
         increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
 
+        // Message Four, Alice to Charlie
         recipient
             .propose_send(alice_to_charlie.clone())
             .await
             .unwrap();
-
         recipient
             .complete_and_broadcast_stored_proposal()
             .await
             .unwrap();
+        increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
+            .await
+            .unwrap();
 
+        // Message Five, Charlie to Alice
         faucet.propose_send(charlie_to_alice.clone()).await.unwrap();
-
         faucet
             .complete_and_broadcast_stored_proposal()
             .await
             .unwrap();
-
         increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
