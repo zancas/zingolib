@@ -252,14 +252,27 @@ mod fast {
     ///
     /// After the messages are sent, the test checks that the `messages_containing` method
     /// returns the expected messages for each party in the correct order.
-    ///  NOTE:  This test is explicitly spoofing inauthentic addresses since Bob and Charlie are
-    ///  actually the same recipient faucet!!
     #[tokio::test]
     async fn message_thread() {
         // Begin test setup
         let (regtest_manager, _cph, faucet, recipient, _txid) =
             scenarios::orchard_funded_recipient(10_000_000).await;
-
+        macro_rules! send_and_sync {
+            ($client:ident, $message:ident) => {
+                // Propose sending the message
+                $client.propose_send($message.clone()).await.unwrap();
+                // Complete and broadcast the stored proposal
+                $client
+                    .complete_and_broadcast_stored_proposal()
+                    .await
+                    .unwrap();
+                // Increase the height and wait for the client
+                increase_height_and_wait_for_client(&regtest_manager, &$client, 1)
+                    .await
+                    .unwrap();
+            };
+        }
+        // Addresses: alice, bob, charlie
         let alice = get_base_address(&recipient, PoolType::ORCHARD).await;
         let bob = faucet
             .wallet
@@ -273,7 +286,6 @@ mod fast {
                 false,
             )
             .unwrap();
-
         let charlie = faucet
             .wallet
             .wallet_capability()
@@ -287,6 +299,7 @@ mod fast {
             )
             .unwrap();
 
+        // messages
         let alice_to_bob = TransactionRequest::new(vec![Payment::new(
             ZcashAddress::from_str(&bob.encode(&faucet.config().chain)).unwrap(),
             NonNegativeAmount::from_u64(1_000).unwrap(),
@@ -299,7 +312,6 @@ mod fast {
         )
         .unwrap()])
         .unwrap();
-
         let alice_to_bob_2 = TransactionRequest::new(vec![Payment::new(
             ZcashAddress::from_str(&bob.encode(&faucet.config().chain)).unwrap(),
             NonNegativeAmount::from_u64(1_000).unwrap(),
@@ -312,7 +324,6 @@ mod fast {
         )
         .unwrap()])
         .unwrap();
-
         let alice_to_charlie = TransactionRequest::new(vec![Payment::new(
             ZcashAddress::from_str(&charlie.encode(&faucet.config().chain)).unwrap(),
             NonNegativeAmount::from_u64(1_000).unwrap(),
@@ -325,7 +336,6 @@ mod fast {
         )
         .unwrap()])
         .unwrap();
-
         let charlie_to_alice = TransactionRequest::new(vec![Payment::new(
             ZcashAddress::from_str(&alice).unwrap(),
             NonNegativeAmount::from_u64(1_000).unwrap(),
@@ -342,7 +352,6 @@ mod fast {
         )
         .unwrap()])
         .unwrap();
-
         let bob_to_alice = TransactionRequest::new(vec![Payment::new(
             ZcashAddress::from_str(&alice).unwrap(),
             NonNegativeAmount::from_u64(1_000).unwrap(),
@@ -361,90 +370,38 @@ mod fast {
         .unwrap();
         // Complete test setup
 
-        // Message One, Alice to Bob
-        recipient.propose_send(alice_to_bob.clone()).await.unwrap();
-        recipient
-            .complete_and_broadcast_stored_proposal()
-            .await
-            .unwrap();
+        // Message Sending
+        send_and_sync!(recipient, alice_to_bob);
+        send_and_sync!(recipient, alice_to_bob_2);
+        send_and_sync!(faucet, bob_to_alice);
+        send_and_sync!(recipient, alice_to_charlie);
+        send_and_sync!(faucet, charlie_to_alice);
+        // Final sync of recipient
         increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
             .await
             .unwrap();
 
-        // Message Two, Alice to Bob
-        recipient
-            .propose_send(alice_to_bob_2.clone())
-            .await
-            .unwrap();
-        recipient
-            .complete_and_broadcast_stored_proposal()
-            .await
-            .unwrap();
-        increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
-            .await
-            .unwrap();
-
-        // Message Three, Bob to Alice
-        faucet.propose_send(bob_to_alice.clone()).await.unwrap();
-        faucet
-            .complete_and_broadcast_stored_proposal()
-            .await
-            .unwrap();
-        increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
-            .await
-            .unwrap();
-
-        // Message Four, Alice to Charlie
-        recipient
-            .propose_send(alice_to_charlie.clone())
-            .await
-            .unwrap();
-        recipient
-            .complete_and_broadcast_stored_proposal()
-            .await
-            .unwrap();
-        increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
-            .await
-            .unwrap();
-
-        // Message Five, Charlie to Alice
-        faucet.propose_send(charlie_to_alice.clone()).await.unwrap();
-        faucet
-            .complete_and_broadcast_stored_proposal()
-            .await
-            .unwrap();
-        increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
-            .await
-            .unwrap();
-
+        // Collect observations
         let value_transfers_bob = &recipient
             .messages_containing(Some(&bob.encode(&recipient.config().chain)))
             .await;
-
         let value_transfers_charlie = &recipient
             .messages_containing(Some(&charlie.encode(&recipient.config().chain)))
             .await;
-
         let all_vts = &recipient.sorted_value_transfers(true).await;
         let all_messages = &recipient.messages_containing(None).await;
 
-        for vt in all_vts {
-            dbg!(vt.blockheight());
-        }
-
+        // Make assertions
         assert_eq!(value_transfers_bob.len(), 3);
         assert_eq!(value_transfers_charlie.len(), 2);
 
         // Also asserting the order now (sorry juanky)
         // ALL MESSAGES (First one should be the oldest one)
         assert!(all_messages
-            .0
             .windows(2)
             .all(|pair| { pair[0].blockheight() <= pair[1].blockheight() }));
-
         // ALL VTS (First one should be the most recent one)
         assert!(all_vts
-            .0
             .windows(2)
             .all(|pair| { pair[0].blockheight() >= pair[1].blockheight() }));
     }
