@@ -88,10 +88,7 @@ where
         );
     */
     lookup_statuses(sender, txids.clone()).await.map(|status| {
-        assert_eq!(
-            status,
-            Some(ConfirmationStatus::Transmitted(send_height.into()))
-        );
+        assert_eq!(status, Some(ConfirmationStatus::Transmitted(send_height)));
     });
 
     let send_ua_id = sender.do_addresses().await[0]["address"].clone();
@@ -196,10 +193,7 @@ where
         .expect("record is ok");
 
     lookup_statuses(client, txids.clone()).await.map(|status| {
-        assert_eq!(
-            status,
-            Some(ConfirmationStatus::Transmitted(send_height.into()))
-        );
+        assert_eq!(status, Some(ConfirmationStatus::Transmitted(send_height)));
     });
 
     if test_mempool {
