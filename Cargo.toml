@@ -104,7 +104,11 @@ bs58 = "0.5"
 
 [profile.release]
 debug = false
+incremental = false
 
 [profile.test]
 opt-level = 3
 debug = false
+
+[profile.dev]
+incremental = true
