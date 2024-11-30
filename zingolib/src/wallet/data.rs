@@ -681,6 +681,13 @@ pub mod summaries {
     #[derive(PartialEq, Debug)]
     pub struct ValueTransfers(pub Vec<ValueTransfer>);
 
+    impl std::ops::Deref for ValueTransfers {
+        type Target = Vec<ValueTransfer>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
     // Implement the Index trait
     impl std::ops::Index<usize> for ValueTransfers {
         type Output = ValueTransfer; // The type of the value returned by the index
