@@ -462,8 +462,8 @@ mod fast {
 
         assert_eq!(value_transfers, value_transfers1);
         assert_eq!(value_transfers, value_transfers2);
-        assert_eq!(value_transfers.0, value_transfers3.0);
-        assert_eq!(value_transfers.0, value_transfers4.0);
+        assert_eq!(value_transfers, &value_transfers3);
+        assert_eq!(value_transfers, &value_transfers4);
     }
 
     pub mod tex {
