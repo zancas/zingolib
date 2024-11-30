@@ -15,13 +15,13 @@ use zingo_status::confirmation_status::ConfirmationStatus;
 /// this function handles inputs and their lifetimes to create a proposal
 pub async fn to_clients_proposal(
     sender: &LightClient,
-    sends: &Vec<(&LightClient, PoolType, u64, Option<&str>)>,
+    sends: &[(&LightClient, PoolType, u64, Option<&str>)],
 ) -> zcash_client_backend::proposal::Proposal<
     zcash_primitives::transaction::fees::zip317::FeeRule,
     zcash_client_backend::wallet::NoteId,
 > {
     let mut subraw_receivers = vec![];
-    for (recipient, pooltype, amount, memo_str) in sends.clone() {
+    for (recipient, pooltype, amount, memo_str) in sends.iter().copied() {
         let address = get_base_address(recipient, pooltype).await;
         subraw_receivers.push((address, amount, memo_str));
     }
