@@ -703,10 +703,6 @@ pub mod summaries {
         pub fn new(value_transfers: Vec<ValueTransfer>) -> Self {
             ValueTransfers(value_transfers)
         }
-        /// Implicitly dispatch to the wrapped data
-        pub fn iter(&self) -> std::slice::Iter<ValueTransfer> {
-            self.0.iter()
-        }
 
         /// Creates value transfers for all notes in a transaction that are sent to another
         /// recipient.  A value transfer is a group of all notes to a specific receiver in a transaction.
