@@ -237,7 +237,7 @@ mod fast {
 
         let single_message = &recipient.messages_containing(None).await;
 
-        assert_eq!(single_message.0.len(), 1);
+        assert_eq!(single_message.len(), 1);
     }
 
     /// Test sending and receiving messages between three parties.
@@ -425,12 +425,12 @@ mod fast {
         let all_vts = &recipient.sorted_value_transfers(true).await;
         let all_messages = &recipient.messages_containing(None).await;
 
-        for vt in all_vts.0.iter() {
+        for vt in all_vts {
             dbg!(vt.blockheight());
         }
 
-        assert_eq!(value_transfers_bob.0.len(), 3);
-        assert_eq!(value_transfers_charlie.0.len(), 2);
+        assert_eq!(value_transfers_bob.len(), 3);
+        assert_eq!(value_transfers_charlie.len(), 2);
 
         // Also asserting the order now (sorry juanky)
         // ALL MESSAGES (First one should be the oldest one)
