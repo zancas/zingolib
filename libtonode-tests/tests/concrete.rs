@@ -455,10 +455,10 @@ mod fast {
         let mut value_transfers3 = recipient.sorted_value_transfers(false).await;
         let mut value_transfers4 = recipient.sorted_value_transfers(false).await;
 
-        assert_eq!(value_transfers.0[0].memos().len(), 4);
+        assert_eq!(value_transfers[0].memos().len(), 4);
 
-        value_transfers3.0.reverse();
-        value_transfers4.0.reverse();
+        value_transfers3.reverse();
+        value_transfers4.reverse();
 
         assert_eq!(value_transfers, value_transfers1);
         assert_eq!(value_transfers, value_transfers2);
