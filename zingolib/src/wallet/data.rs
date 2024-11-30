@@ -699,6 +699,7 @@ pub mod summaries {
 
     impl ValueTransfers {
         /// Creates a new ValueTransfer
+        #[deprecated(since = "1.10.2", note = "never used")]
         pub fn new(value_transfers: Vec<ValueTransfer>) -> Self {
             ValueTransfers(value_transfers)
         }
