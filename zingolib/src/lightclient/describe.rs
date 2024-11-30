@@ -301,7 +301,7 @@ impl LightClient {
     pub async fn sorted_value_transfers(&self, newer_first: bool) -> ValueTransfers {
         let mut value_transfers = self.value_transfers().await;
         if newer_first {
-            value_transfers.0.reverse();
+            value_transfers.reverse();
         }
         value_transfers
     }

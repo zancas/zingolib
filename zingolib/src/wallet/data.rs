@@ -688,6 +688,11 @@ pub mod summaries {
             &self.0
         }
     }
+    impl std::ops::DerefMut for ValueTransfers {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
     // Implement the Index trait
     impl std::ops::Index<usize> for ValueTransfers {
         type Output = ValueTransfer; // The type of the value returned by the index
