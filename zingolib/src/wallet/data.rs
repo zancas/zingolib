@@ -685,7 +685,7 @@ pub mod summaries {
         type IntoIter = std::slice::Iter<'a, ValueTransfer>;
 
         fn into_iter(self) -> Self::IntoIter {
-            self.0.iter()
+            self.iter()
         }
     }
     impl std::ops::Deref for ValueTransfers {
