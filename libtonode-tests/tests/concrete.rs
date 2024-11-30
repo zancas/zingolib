@@ -501,11 +501,11 @@ mod fast {
 
             let proposal = sender.propose_send(transaction_request).await.unwrap();
             assert_eq!(proposal.steps().len(), 2usize);
-            let sent_txids_according_to_broadcast = sender
+            let _sent_txids_according_to_broadcast = sender
                 .complete_and_broadcast_stored_proposal()
                 .await
                 .unwrap();
-            let txids = sender
+            let _txids = sender
                 .wallet
                 .transactions()
                 .read()
@@ -514,8 +514,6 @@ mod fast {
                 .keys()
                 .cloned()
                 .collect::<Vec<TxId>>();
-            dbg!(&txids);
-            dbg!(sent_txids_according_to_broadcast);
             assert_eq!(
                 sender
                     .wallet
@@ -526,10 +524,10 @@ mod fast {
                     .len(),
                 3usize
             );
-            let val_tranfers = dbg!(sender.sorted_value_transfers(true).await);
+            let val_transfers = sender.sorted_value_transfers(true).await;
             // This fails, as we don't scan sends to tex correctly yet
             assert_eq!(
-                val_tranfers.0[0].recipient_address().unwrap(),
+                val_transfers[1].recipient_address().unwrap(),
                 tex_addr_from_first.encode()
             );
         }
