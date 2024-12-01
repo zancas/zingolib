@@ -679,7 +679,7 @@ pub mod summaries {
 
     /// A wrapper struct for implementing display and json on a vec of value trasnfers
     #[derive(PartialEq, Debug)]
-    pub struct ValueTransfers(pub Vec<ValueTransfer>);
+    pub struct ValueTransfers(Vec<ValueTransfer>);
     impl<'a> std::iter::IntoIterator for &'a ValueTransfers {
         type Item = &'a ValueTransfer;
         type IntoIter = std::slice::Iter<'a, ValueTransfer>;

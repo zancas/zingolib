@@ -557,7 +557,7 @@ impl LightClient {
                 }
             };
         }
-        ValueTransfers(value_transfers)
+        ValueTransfers::new(value_transfers)
     }
 
     /// TODO: doc comment
@@ -700,9 +700,9 @@ impl LightClient {
 
     /// TODO: Add Doc Comment Here!
     pub async fn do_total_memobytes_to_address(&self) -> finsight::TotalMemoBytesToAddress {
-        let value_transfers = self.sorted_value_transfers(true).await.0;
+        let value_transfers = self.sorted_value_transfers(true).await;
         let mut memobytes_by_address = HashMap::new();
-        for value_transfer in value_transfers {
+        for value_transfer in &value_transfers {
             if let ValueTransferKind::Sent(SentValueTransfer::Send) = value_transfer.kind() {
                 let address = value_transfer
                     .recipient_address()
@@ -955,9 +955,9 @@ impl LightClient {
     }
 
     async fn value_transfer_by_to_address(&self) -> finsight::ValuesSentToAddress {
-        let value_transfers = self.sorted_value_transfers(false).await.0;
+        let value_transfers = self.sorted_value_transfers(false).await;
         let mut amount_by_address = HashMap::new();
-        for value_transfer in value_transfers {
+        for value_transfer in &value_transfers {
             if let ValueTransferKind::Sent(SentValueTransfer::Send) = value_transfer.kind() {
                 let address = value_transfer
                     .recipient_address()
