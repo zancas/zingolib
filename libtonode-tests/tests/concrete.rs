@@ -816,9 +816,8 @@ mod fast {
                 3usize
             );
             let val_transfers = sender.sorted_value_transfers(true).await;
-            // This fails, as we don't scan sends to tex correctly yet
             assert_eq!(
-                val_tranfers[0].recipient_address().unwrap(),
+                val_transfers[0].recipient_address().unwrap(),
                 tex_addr_from_first.encode()
             );
         }
