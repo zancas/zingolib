@@ -15,7 +15,7 @@ use zcash_keys::keys::UnifiedFullViewingKey;
 use zcash_note_encryption::Domain;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct KeyId {
+pub(crate) struct KeyId {
     account_id: zcash_primitives::zip32::AccountId,
     scope: Scope,
 }

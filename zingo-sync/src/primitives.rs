@@ -193,12 +193,12 @@ impl WalletTransaction {
     }
 }
 
-pub type SaplingNote = WalletNote<sapling_crypto::Note, sapling_crypto::Nullifier>;
-pub type OrchardNote = WalletNote<orchard::Note, orchard::note::Nullifier>;
+pub(crate) type SaplingNote = WalletNote<sapling_crypto::Note, sapling_crypto::Nullifier>;
+pub(crate) type OrchardNote = WalletNote<orchard::Note, orchard::note::Nullifier>;
 
 /// Wallet note, shielded output with metadata relevant to the wallet
 #[derive(Debug, Getters, CopyGetters, Setters)]
-pub struct WalletNote<N, Nf: Copy> {
+pub(crate) struct WalletNote<N, Nf: Copy> {
     /// Output ID
     #[getset(get_copy = "pub")]
     output_id: OutputId,
@@ -222,7 +222,7 @@ pub struct WalletNote<N, Nf: Copy> {
 }
 
 impl<N, Nf: Copy> WalletNote<N, Nf> {
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         output_id: OutputId,
         key_id: KeyId,
         note: N,
@@ -267,7 +267,7 @@ pub struct OutgoingNote<N> {
 }
 
 impl<N> OutgoingNote<N> {
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         output_id: OutputId,
         key_id: KeyId,
         note: N,
