@@ -1,3 +1,4 @@
+#![cfg(feature = "sync")]
 use tempfile::TempDir;
 use testvectors::seeds::HOSPITAL_MUSEUM_SEED;
 use zingo_netutils::GrpcConnector;

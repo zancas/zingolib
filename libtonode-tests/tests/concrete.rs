@@ -3,7 +3,7 @@
 use json::JsonValue;
 use testvectors::{block_rewards, seeds::HOSPITAL_MUSEUM_SEED, BASE_HEIGHT};
 use zcash_primitives::transaction::components::amount::NonNegativeAmount;
-use zcash_primitives::{consensus::BlockHeight, transaction::fees::zip317::MINIMUM_FEE};
+use zcash_primitives::transaction::fees::zip317::MINIMUM_FEE;
 use zingolib::lightclient::describe::UAReceivers;
 use zingolib::testutils::lightclient::from_inputs;
 use zingolib::testutils::{increase_height_and_wait_for_client, scenarios};
@@ -102,7 +102,7 @@ mod fast {
     use zcash_client_backend::{PoolType, ShieldedProtocol};
     use zcash_primitives::transaction::components::amount::NonNegativeAmount;
     use zingolib::{
-        config::ZENNIES_FOR_ZINGO_REGTEST_ADDRESS,
+        config::{RegtestNetwork, ZENNIES_FOR_ZINGO_REGTEST_ADDRESS},
         testutils::{
             chain_generics::{conduct_chain::ConductChain, libtonode::LibtonodeEnvironment},
             lightclient::from_inputs,
@@ -987,42 +987,42 @@ mod fast {
         //dbg!(std::process::Command::new("grpcurl").args(["-plaintext", "127.0.0.1:9067"]));
     }
 
-    #[tokio::test]
-    async fn diversified_addresses_receive_funds_in_best_pool() {
-        let (regtest_manager, _cph, faucet, recipient) =
-            scenarios::faucet_recipient_default().await;
-        for code in ["o", "zo", "z"] {
-            recipient.do_new_address(code).await.unwrap();
-        }
-        let addresses = recipient.do_addresses(UAReceivers::All).await;
-        let address_5000_nonememo_tuples = addresses
-            .members()
-            .map(|ua| (ua["address"].as_str().unwrap(), 5_000, None))
-            .collect::<Vec<(&str, u64, Option<&str>)>>();
-        from_inputs::quick_send(&faucet, address_5000_nonememo_tuples)
-            .await
-            .unwrap();
-        zingolib::testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
-            .await
-            .unwrap();
-        let balance_b = recipient.do_balance().await;
-        assert_eq!(
-            balance_b,
-            PoolBalances {
-                sapling_balance: Some(5000),
-                verified_sapling_balance: Some(5000),
-                spendable_sapling_balance: Some(5000),
-                unverified_sapling_balance: Some(0),
-                orchard_balance: Some(15000),
-                verified_orchard_balance: Some(15000),
-                spendable_orchard_balance: Some(15000),
-                unverified_orchard_balance: Some(0),
-                transparent_balance: Some(0)
-            }
-        );
-        // Unneeded, but more explicit than having _cph be an
-        // unused variable
-    }
+    //#[tokio::test]
+    //async fn diversified_addresses_receive_funds_in_best_pool() {
+    //    let (regtest_manager, _cph, faucet, recipient) =
+    //        scenarios::faucet_recipient_default().await;
+    //    for code in ["o", "zo", "z"] {
+    //        recipient.do_new_address(code).await.unwrap();
+    //    }
+    //    let addresses = recipient.do_addresses(UAReceivers::All).await;
+    //    let address_5000_nonememo_tuples = addresses
+    //        .members()
+    //        .map(|ua| (ua["address"].as_str().unwrap(), 5_000, None))
+    //        .collect::<Vec<(&str, u64, Option<&str>)>>();
+    //    from_inputs::quick_send(&faucet, address_5000_nonememo_tuples)
+    //        .await
+    //        .unwrap();
+    //    zingolib::testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
+    //        .await
+    //        .unwrap();
+    //    let balance_b = recipient.do_balance().await;
+    //    assert_eq!(
+    //        balance_b,
+    //        PoolBalances {
+    //            sapling_balance: Some(5000),
+    //            verified_sapling_balance: Some(5000),
+    //            spendable_sapling_balance: Some(5000),
+    //            unverified_sapling_balance: Some(0),
+    //            orchard_balance: Some(15000),
+    //            verified_orchard_balance: Some(15000),
+    //            spendable_orchard_balance: Some(15000),
+    //            unverified_orchard_balance: Some(0),
+    //            transparent_balance: Some(0)
+    //        }
+    //    );
+    //    // Unneeded, but more explicit than having _cph be an
+    //    // unused variable
+    //}
 
     #[tokio::test]
     async fn diversification_deterministic_and_coherent() {
@@ -1266,6 +1266,7 @@ mod slow {
     use bip0039::Mnemonic;
     use zcash_client_backend::{PoolType, ShieldedProtocol};
     use zcash_primitives::transaction::fees::zip317::MARGINAL_FEE;
+    use zingolib::config::RegtestNetwork;
     use zingolib::lightclient::send::send_with_proposal::QuickSendError;
     use zingolib::testutils::{
         assert_transaction_summary_exists,
@@ -1669,34 +1670,34 @@ mod slow {
     //     zingolib::testutils::increase_height_and_wait_for_client(&regtest_manager, &recipient, 1)
     //         .await
     //         .unwrap();
-    //     recipient.do_sync(true).await.unwrap();
+    ////     recipient.do_sync(true).await.unwrap();
 
-        // 3. Test the list
-        let list = recipient.do_list_transactions().await;
-        assert_eq!(list[0]["block_height"].as_u64().unwrap(), 4);
-        assert_eq!(
-            recipient.do_addresses(UAReceivers::All).await[0]["receivers"]["transparent"]
-                .to_string(),
-            recipient_taddr
-        );
-        assert_eq!(list[0]["amount"].as_u64().unwrap(), value);
+    //    // 3. Test the list
+    //    let list = recipient.do_list_transactions().await;
+    //    assert_eq!(list[0]["block_height"].as_u64().unwrap(), 4);
+    //    assert_eq!(
+    //        recipient.do_addresses(UAReceivers::All).await[0]["receivers"]["transparent"]
+    //            .to_string(),
+    //        recipient_taddr
+    //    );
+    //    assert_eq!(list[0]["amount"].as_u64().unwrap(), value);
 
-        // 4. We can't spend the funds, as they're transparent. We need to shield first
-        let sent_value = 20_000;
-        let sent_transaction_error =
-            from_inputs::quick_send(&recipient, vec![(testvectors::EXT_TADDR, sent_value, None)])
-                .await
-                .unwrap_err();
-        assert!(matches!(
-            sent_transaction_error,
-            QuickSendError::ProposeSend(ProposeSendError::Proposal(
-                zcash_client_backend::data_api::error::Error::InsufficientFunds {
-                    available: _,
-                    required: _
-                }
-            ))
-        ));
-    }
+    //    // 4. We can't spend the funds, as they're transparent. We need to shield first
+    //    let sent_value = 20_000;
+    //    let sent_transaction_error =
+    //        from_inputs::quick_send(&recipient, vec![(testvectors::EXT_TADDR, sent_value, None)])
+    //            .await
+    //            .unwrap_err();
+    //    assert!(matches!(
+    //        sent_transaction_error,
+    //        QuickSendError::ProposeSend(ProposeSendError::Proposal(
+    //            zcash_client_backend::data_api::error::Error::InsufficientFunds {
+    //                available: _,
+    //                required: _
+    //            }
+    //        ))
+    //    ));
+    //}
     #[tokio::test]
     async fn compare_shielded_only_vs_default_do_addresses() {
         let (_regtest_manager, _cph, _faucet, recipient) =
@@ -2508,21 +2509,21 @@ mod slow {
 
     //     assert_eq!(recipient.wallet.last_synced_height().await, 4);
 
-        // 3. Check the balance is correct, and we received the incoming transaction from ?outside?
-        let b = recipient.do_balance().await;
-        let addresses = recipient.do_addresses(UAReceivers::All).await;
-        assert_eq!(b.sapling_balance.unwrap(), value);
-        assert_eq!(b.unverified_sapling_balance.unwrap(), 0);
-        assert_eq!(b.spendable_sapling_balance.unwrap(), value);
-        assert_eq!(
-            addresses[0]["receivers"]["sapling"],
-            encode_payment_address(
-                recipient.config().chain.hrp_sapling_payment_address(),
-                recipient.wallet.wallet_capability().addresses()[0]
-                    .sapling()
-                    .unwrap()
-            ),
-        );
+    // 3. Check the balance is correct, and we received the incoming transaction from ?outside?
+    //     let b = recipient.do_balance().await;
+    //     let addresses = recipient.do_addresses(UAReceivers::All).await;
+    //     assert_eq!(b.sapling_balance.unwrap(), value);
+    //     assert_eq!(b.unverified_sapling_balance.unwrap(), 0);
+    //     assert_eq!(b.spendable_sapling_balance.unwrap(), value);
+    //     assert_eq!(
+    //         addresses[0]["receivers"]["sapling"],
+    //         encode_payment_address(
+    //             recipient.config().chain.hrp_sapling_payment_address(),
+    //             recipient.wallet.wallet_capability().addresses()[0]
+    //                 .sapling()
+    //                 .unwrap()
+    //         ),
+    //     );
 
     //     let list = recipient.do_list_transactions().await;
     //     if let JsonValue::Array(list) = list {

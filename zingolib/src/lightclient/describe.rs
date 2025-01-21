@@ -60,7 +60,14 @@ impl LightClient {
     // todo use helpers
     pub async fn do_addresses(&self, subset: UAReceivers) -> JsonValue {
         let mut objectified_addresses = Vec::new();
-        for address in self.wallet.wallet_capability().addresses().iter() {
+        for address in self
+            .wallet
+            .lock()
+            .await
+            .wallet_capability()
+            .addresses()
+            .iter()
+        {
             let local_address = match subset {
                 UAReceivers::Orchard => zcash_keys::address::UnifiedAddress::from_receivers(
                     address.orchard().copied(),
